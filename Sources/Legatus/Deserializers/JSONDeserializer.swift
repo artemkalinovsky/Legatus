@@ -1,9 +1,18 @@
 import Foundation
+import JASON
 import BoltsSwift
+
+public protocol JSONDeserializable {
+    init?(json: JSON)
+}
 
 open class JSONDeserializer<T>: ResponseDeserializer<T> {
 
-    typealias Transform = ((Any, [String: Any]?) throws -> T)
+    public enum JSONDeserializerError: Error {
+        case jsonDeserializableInitFailed(String)
+    }
+
+    typealias Transform = ((Data, [String: Any]?) throws -> T)
 
     let transform: Transform
 
@@ -21,7 +30,7 @@ open class JSONDeserializer<T>: ResponseDeserializer<T> {
         }
     }
 
-    override func deserialize(_ data: Data, headers: [String: Any]? = nil) -> Task<T> {
+    public override func deserialize(_ data: Data, headers: [String: Any]? = nil) -> Task<T> {
         let source = TaskCompletionSource<(T)>()
         do {
             let object = try transform(data, headers)
@@ -33,69 +42,35 @@ open class JSONDeserializer<T>: ResponseDeserializer<T> {
     }
 }
 
-public extension JSONDeserializer where T: JSONDecodable {
+public extension JSONDeserializer where T: JSONDeserializable {
 
     class func singleObjectDeserializer(keyPath: String? = nil) -> JSONDeserializer<T> {
-
         return JSONDeserializer { jsonDataObject, _ in
-            func map(_ object: [String: Any])throws -> T {
-                if let directObject =  T(decodingRepresentation: object) {
-                    return directObject
-                } else {
-                    throw ResponseError.resourceInvalidError()
-                }
-            }
-            var jsonObject = jsonDataObject
-            if let jsonData = jsonDataObject as? Data {
-                jsonObject = try JSONSerialization.jsonObject(with: jsonData, options: .allowFragments)
-            }
-            switch (jsonObject, keyPath) {
-            case (let object as [String: AnyObject], let keyPath?):
-                if let directObject = (object[keyPath] as? [String: AnyObject]) {
-                    return try map(directObject)
-                } else {
-                    throw ResponseError.resourceInvalidError()
-                }
-            case (let object as [String: AnyObject], _):
-                return try map(object)
+            let json = JSON(jsonDataObject)
 
-            default:
-                throw ResponseError.resourceInvalidError()
-
+            guard let deserializedObject = keyPath == nil ? T(json: json) : T(json: json[keyPath!].json) else {
+                throw JSONDeserializerError.jsonDeserializableInitFailed("Failed to create \(T.self) object.")
             }
+            return deserializedObject
         }
     }
 
     class func objectsArrayDeserializer(keyPath: String? = nil) -> JSONDeserializer<[T]> {
         return JSONDeserializer<[T]>(transform: { jsonDataObject, _ in
-            func map(_ objects: [[String: AnyObject]]) throws -> [T] {
-                return try objects.reduce([T](), { container, rawValue -> [T] in
-                    if let value = T(decodingRepresentation: rawValue) {
-                        return container + [value]
-                    } else {
-                        throw ResponseError.resourceInvalidError()
-                    }
-                })
+            let json = JSON(jsonDataObject)
+            let jsonArrayValue = keyPath == nil ? json.jsonArrayValue : json[keyPath!].jsonArrayValue
+
+            if jsonArrayValue.isEmpty {
+                return []
             }
 
-            var jsonObject = jsonDataObject
-            if let jsonData = jsonDataObject as? Data {
-                jsonObject = try JSONSerialization.jsonObject(with: jsonData, options: .allowFragments)
-            }
-            switch (jsonObject, keyPath) {
-            case (let object as [String: AnyObject], let keyPath?):
-                if let objects = object[keyPath] as? [[String: AnyObject]] {
-                    return try map(objects)
-                } else {
-                    throw ResponseError.resourceInvalidError()
-                }
+            let deserializedObjects = jsonArrayValue.compactMap { T(json: $0) }
 
-            case (let objects as [[String: AnyObject]], _):
-                return try map(objects)
-
-            default:
-                throw ResponseError.resourceInvalidError()
+            if deserializedObjects.isEmpty {
+                throw JSONDeserializerError.jsonDeserializableInitFailed("Failed to create array of \(T.self) objects.")
             }
+
+            return deserializedObjects
         })
     }
 }

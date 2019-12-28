@@ -2,11 +2,11 @@ import Foundation
 import BoltsSwift
 import Alamofire
 
-let APIClientReachabilityChangedNotification = Notification.Name("APIClientReachabilityChangedNotification")
-let HostNameKey = "host"
-let ReachableKey = "reachable"
-
 open class APIClient: NSObject {
+    private struct Constants {
+        static let hostNameKey = "host"
+        static let reachableKey = "reachable"
+    }
 
     var isReachable: Bool {
         return reachabilityManager?.isReachable ?? false
@@ -25,7 +25,6 @@ open class APIClient: NSObject {
 
 
     init(baseURL: URL) {
-
         let configuration: URLSessionConfiguration = {
             let identifier = "com.company.app.background-session"
             let configuration = URLSessionConfiguration.background(withIdentifier: identifier)
@@ -40,9 +39,10 @@ open class APIClient: NSObject {
             reachabilityManager = NetworkReachabilityManager(host: host)
 
             reachabilityManager?.listener = { status in
-                NotificationCenter.default.post(name: APIClientReachabilityChangedNotification,
+                NotificationCenter.default.post(name: Notification.Name.APIClientReachabilityChangedNotification,
                                                 object: self,
-                                                userInfo: [HostNameKey: host, ReachableKey: status != .notReachable])
+                                                userInfo: [Constants.hostNameKey: host,
+                                                           Constants.reachableKey: status != .notReachable])
             }
 
             reachabilityManager?.startListening()
@@ -55,7 +55,7 @@ open class APIClient: NSObject {
     }
 
     func executeRequest<T>(_ request: APIRequest,
-                           serializer: ResponseDeserializer<T>,
+                           deserializer: ResponseDeserializer<T>,
                            completion: @escaping (T?, ResponseError?) -> Void) {
         if reachabilityManager?.isReachable == false {
             completion(nil, ResponseError(errorCode: .noInternetConnection))
@@ -110,7 +110,7 @@ open class APIClient: NSObject {
         }
 
         source.task.continueOnSuccessWithTask (responseExecutor, continuation: { (data, headers) -> Task<T> in
-            return serializer.deserialize(data, headers: headers)
+            return deserializer.deserialize(data, headers: headers)
         }).continueOnSuccessWith(.mainThread, continuation: { response in
             return response
         }).continueWith { task in
@@ -119,14 +119,17 @@ open class APIClient: NSObject {
     }
 
     func executeRequest<T, U>(_ request: APIRequest,
-                              serializer: ResponseDeserializer<T>,
+                              deserializer: ResponseDeserializer<T>,
                               completion: @escaping (U?, ResponseError?) -> Void) {
-        executeRequest(request, serializer: serializer) { data, error in
+        executeRequest(request, deserializer: deserializer) { data, error in
             completion(data as? U, error)
         }
     }
 
-    func handle(data: Data?, response: HTTPURLResponse?, error: Error?, source: TaskCompletionSource<(Data, [String: Any]?)>) {
+    func handle(data: Data?,
+                response: HTTPURLResponse?,
+                error: Error?,
+                source: TaskCompletionSource<(Data, [String: Any]?)>) {
         let headers = response?.allHeaderFields as? [String: Any]
         var generatedError: ResponseError = ResponseError.resourceInvalidError()
         if let data = data, error == nil && !data.isEmpty {
