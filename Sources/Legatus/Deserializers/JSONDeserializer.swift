@@ -1,6 +1,6 @@
 import Foundation
+import Combine
 import JASON
-import BoltsSwift
 
 public protocol JSONDeserializable {
     init?(json: JSON)
@@ -30,15 +30,15 @@ open class JSONDeserializer<T>: ResponseDeserializer<T> {
         }
     }
 
-    public override func deserialize(_ data: Data, headers: [String: Any]? = nil) -> Task<T> {
-        let source = TaskCompletionSource<(T)>()
-        do {
-            let object = try transform(data, headers)
-            source.set(result: object)
-        } catch {
-            source.set(error: error)
+    public override func deserialize(_ data: Data, headers: [String: Any]? = nil) -> Future<T, Error> {
+        return Future { promise in
+            do {
+                let object = try self.transform(data, headers)
+                promise(.success(object))
+            } catch {
+                promise(.failure(error))
+            }
         }
-        return source.task
     }
 }
 

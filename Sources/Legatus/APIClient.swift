@@ -1,5 +1,5 @@
 import Foundation
-import BoltsSwift
+import Combine
 import Alamofire
 
 open class APIClient: NSObject {
@@ -18,11 +18,11 @@ open class APIClient: NSObject {
     private var manager: SessionManager
     private var reachabilityManager: NetworkReachabilityManager?
 
-    private let responseExecutor: Executor = {
-        let id = "\(Bundle.main.bundleIdentifier!).\(APIClient.self)"
-        return .queue(DispatchQueue(label: id, attributes: .concurrent))
-    }()
+    private let deserializationQueue = DispatchQueue(label: "DeserializationQueue",
+                                                     qos: .default,
+                                                     attributes: .concurrent)
 
+    private var requestSubscriptions = Set<AnyCancellable>()
 
     init(baseURL: URL) {
         let configuration: URLSessionConfiguration = {
@@ -60,60 +60,67 @@ open class APIClient: NSObject {
         if reachabilityManager?.isReachable == false {
             completion(nil, ResponseError(errorCode: .noInternetConnection))
         }
-        let source = TaskCompletionSource<(Data, [String: Any]?)>()
-        var requestPath = baseURL.appendingPathComponent(request.path).absoluteString
-        if let fullPath = request.fullPath, !fullPath.isEmpty {
-            requestPath = fullPath
-        }
 
         if let requestMultipartDatas = request.multipartFormData {
-            manager.upload(multipartFormData: { multipartFormData in
-                for requestMultipartData in requestMultipartDatas {
-                    multipartFormData.append(requestMultipartData.value, withName: requestMultipartData.key)
-                }
-            }, to: requestPath,
-               method: request.method,
-               headers: request.headers) { result in
-                switch result {
-                case .success(let upload, _, _):
-
-                    upload.uploadProgress(closure: {[weak self] (progress) in
-                        self?.progress = progress.fractionCompleted
-                    })
-                    upload.responseData(completionHandler: { [weak self] dataResponse in
-                        let response = dataResponse.response
-                        let data = dataResponse.data
-                        let error = dataResponse.error
-                        self?.handle(data: data, response: response, error: error, source: source)
-                    })
-                case .failure(let encodingError):
-                    let generatedError = ResponseError(error: encodingError)
-                    if !source.task.completed {
-                        source.set(error: generatedError!)
-                    }
-                }
-            }
+            //            manager.upload(multipartFormData: { multipartFormData in
+            //                for requestMultipartData in requestMultipartDatas {
+            //                    multipartFormData.append(requestMultipartData.value, withName: requestMultipartData.key)
+            //                }
+            //            }, to: requestPath,
+            //               method: request.method,
+            //               headers: request.headers) { result in
+            //                switch result {
+            //                case .success(let upload, _, _):
+            //
+            //                    upload.uploadProgress(closure: {[weak self] (progress) in
+            //                        self?.progress = progress.fractionCompleted
+            //                    })
+            //                    upload.responseData(completionHandler: { [weak self] dataResponse in
+            //                        let response = dataResponse.response
+            //                        let data = dataResponse.data
+            //                        let error = dataResponse.error
+            //                        self?.handle(data: data, response: response, error: error, source: source)
+            //                    })
+            //                case .failure(let encodingError):
+            //                    let generatedError = ResponseError(error: encodingError)
+            //                    if !source.task.completed {
+            //                        source.set(error: generatedError!)
+            //                    }
+            //                }
+            //            }
 
         } else {
-            _ = manager.request(requestPath,
-                                method: request.method,
-                                parameters: request.parameters,
-                                encoding: request.encoding,
-                                headers: request.headers).response {[weak self]  dataResponse in
-                                    self?.handle(data: dataResponse.data,
-                                                 response: dataResponse.response,
-                                                 error: dataResponse.error,
-                                                 source: source)
-            }
+            //            _ = manager.request(requestPath,
+            //                                method: request.method,
+            //                                parameters: request.parameters,
+            //                                encoding: request.encoding,
+            //                                headers: request.headers).response {[weak self]  dataResponse in
+            //                                    self?.handle(data: dataResponse.data,
+            //                                                 response: dataResponse.response,
+            //                                                 error: dataResponse.error,
+            //                                                 source: source)
+            //            }
+            self.request(request)
+                .flatMap { self.handle(data: $0.data, response: $0.response, error: $0.error) }
+                .subscribe(on: deserializationQueue)
+                .flatMap { deserializer.deserialize($0, headers: $1) }
+                .receive(on: DispatchQueue.main)
+                .sink(receiveCompletion: { receivedCompletion in
+                    if case let .failure(error) = receivedCompletion {
+                        completion(nil, error as? ResponseError)
+                    }
+                }, receiveValue: { value in
+                    completion(value, nil)
+                }).store(in: &requestSubscriptions)
         }
 
-        source.task.continueOnSuccessWithTask (responseExecutor, continuation: { (data, headers) -> Task<T> in
-            return deserializer.deserialize(data, headers: headers)
-        }).continueOnSuccessWith(.mainThread, continuation: { response in
-            return response
-        }).continueWith { task in
-            completion(task.result, (task.error as? ResponseError))
-        }
+        //        source.task.continueOnSuccessWithTask (responseExecutor, continuation: { (data, headers) -> Task<T> in
+        //            return deserializer.deserialize(data, headers: headers)
+        //        }).continueOnSuccessWith(.mainThread, continuation: { response in
+        //            return response
+        //        }).continueWith { task in
+        //            completion(task.result, (task.error as? ResponseError))
+        //        }
     }
 
     func executeRequest<T, U>(_ request: APIRequest,
@@ -126,41 +133,43 @@ open class APIClient: NSObject {
 
     func executeRequest<T: DeserializeableRequest, U>(request: T,
                                                       completion: @escaping (U?, ResponseError?) -> Void) where U == T.ResponseType {
-         executeRequest(request,
-                        deserializer: request.deserializer,
-                        completion: completion)
-     }
+        executeRequest(request,
+                       deserializer: request.deserializer,
+                       completion: completion)
+    }
 
     func handle(data: Data?,
                 response: HTTPURLResponse?,
-                error: Error?,
-                source: TaskCompletionSource<(Data, [String: Any]?)>) {
-        let headers = response?.allHeaderFields as? [String: Any]
-        var generatedError: ResponseError = ResponseError.resourceInvalidError()
-        if let data = data, error == nil && !data.isEmpty {
-            let errorSerializer = JSONDeserializer<ResponseError>.singleObjectDeserializer()
-            errorSerializer.deserialize(data, headers: headers).continueWith { task in
-                if let error = task.result {
-                    error.errorCode = APIErrorCode(code: response?.statusCode)
-                    source.set(error: error)
-                } else {
-                    source.set(result: (data, headers))
-                }
+                error: Error?) -> Future <(Data, [String: Any]?), Error> {
+        var errorDeserializerSubscriptions = Set<AnyCancellable>()
+        return Future { promise in
+            let headers = response?.allHeaderFields as? [String: Any]
+            var generatedError: ResponseError = ResponseError.resourceInvalidError()
+            if let data = data, error == nil && !data.isEmpty {
+                let errordeserializer = JSONDeserializer<ResponseError>.singleObjectDeserializer()
+                errordeserializer.deserialize(data, headers: headers)
+                    .sink(receiveCompletion: { errorCompletion in
+                        if case .failure = errorCompletion {
+                            promise(.success((data, headers)))
+                        }
+                    },
+                          receiveValue: { deserializedError in
+                            deserializedError.errorCode = APIErrorCode(code: response?.statusCode)
+                            promise(.failure(deserializedError))
+                    }).store(in: &errorDeserializerSubscriptions)
+            } else if let statusCode = response?.statusCode,
+                (200..<300).contains(statusCode),
+                data?.isEmpty == true {
+                var success = true
+                let data = Data(bytes: &success, count: MemoryLayout.size(ofValue: success))
+                promise(.success((data, headers)))
+            } else if let response = response, let statusCodeError = ResponseError(errorCode: response.statusCode) {
+                generatedError = statusCodeError
+                promise(.failure(generatedError))
+            } else if let error = error {
+                generatedError = ResponseError(error: error)!
+                promise(.failure(generatedError))
             }
-
-        } else if let statusCode = response?.statusCode,
-            (200..<300).contains(statusCode),
-            data?.isEmpty == true {
-            var success = true
-            let data = Data(bytes: &success, count: MemoryLayout.size(ofValue: success))
-            source.set(result: (data, headers))
-        } else if let response = response, let statusCodeError = ResponseError(errorCode: response.statusCode) {
-            generatedError = statusCodeError
-        } else if let error = error {
-            generatedError = ResponseError(error: error)!
-        }
-        if !source.task.completed {
-            source.set(error: generatedError)
         }
     }
 
@@ -169,4 +178,37 @@ open class APIClient: NSObject {
         manager = SessionManager()
     }
 
+    private func request(_ request: APIRequest) -> Future<DefaultDataResponse, Error> {
+        return Future { promise in
+            _ = self.manager.request(self.path(for: request),
+                                     method: request.method,
+                                     parameters: request.parameters,
+                                     encoding: request.encoding,
+                                     headers: request.headers).response { dataResponse in
+                                        promise(.success(dataResponse))
+            }
+        }
+    }
+
+    //    private func multipartRequest(_ request: APIRequest) -> Future<DefaultDataResponse, Never> {
+    //        return Future { promise in
+    //            _ = self.manager.request(self.path(for: request),
+    //                                     method: request.method,
+    //                                     parameters: request.parameters,
+    //                                     encoding: request.encoding,
+    //                                     headers: request.headers).response {dataResponse in
+    //                                        promise(.success(dataResponse))
+    //            }
+    //        }
+    //    }
+
+
+    private func path(for request: APIRequest) -> String {
+        var requestPath = baseURL.appendingPathComponent(request.path).absoluteString
+        if let fullPath = request.fullPath, !fullPath.isEmpty {
+            requestPath = fullPath
+        }
+
+        return requestPath
+    }
 }

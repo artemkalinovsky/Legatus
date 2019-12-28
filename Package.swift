@@ -16,16 +16,15 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "4.9.1")),
-        .package(url: "https://github.com/delba/JASON.git", .branch("master")),
-        .package(url: "https://github.com/BoltsFramework/Bolts-Swift.git", .branch("master"))
+        .package(url: "https://github.com/delba/JASON.git", .branch("master"))
     ],
     targets: [
         .target(
             name: "Legatus",
-            dependencies: ["Alamofire", "JASON", "BoltsSwift"]),
+            dependencies: ["Alamofire", "JASON"]),
         .testTarget(
             name: "LegatusTests",
-            dependencies: ["Legatus", "JASON", "BoltsSwift"]),
+            dependencies: ["Legatus"]),
     ],
     swiftLanguageVersions: [.v5]
 )

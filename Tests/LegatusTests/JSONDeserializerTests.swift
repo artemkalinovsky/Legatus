@@ -1,45 +1,40 @@
 import XCTest
-import BoltsSwift
+import Combine
 @testable import Legatus
 
 final class JSONDeserrializerTests: XCTestCase {
 
-    func testSingleObjectDeserialization() {
-        let jsonDeserializerExpectation = XCTestExpectation(description: "Execute json deserialization.")
+    var subscriptions = Set<AnyCancellable>()
 
+    func testSingleObjectDeserialization() {
         let randomUserJsonDeserializer = JSONDeserializer<RandomUser>.singleObjectDeserializer(keyPath: "user")
         let randomUserJsonData = JSONDataResponses.singleRandomUserJsonDataResponse
 
-        randomUserJsonDeserializer.deserialize(randomUserJsonData).continueWith { task in
-            XCTAssertEqual(task.result?.firstName, "brad")
-            XCTAssertEqual(task.result?.lastName, "gibson")
-            XCTAssertEqual(task.result?.email, "brad.gibson@example.com")
-
-            jsonDeserializerExpectation.fulfill()
-        }
-
-        wait(for: [jsonDeserializerExpectation], timeout: 10.0)
+        randomUserJsonDeserializer.deserialize(randomUserJsonData)
+            .sink(receiveCompletion: { _ in
+            },
+                  receiveValue: { randomUser in
+                    XCTAssertEqual(randomUser.firstName,"brad")
+                    XCTAssertEqual(randomUser.lastName, "gibson")
+                    XCTAssertEqual(randomUser.email, "brad.gibson@example.com")
+            }).store(in: &subscriptions)
     }
 
     func testObjectsArrayDeserialization() {
-        let jsonDeserializerExpectation = XCTestExpectation(description: "Execute json deserialization.")
-
         let randomUsersJsonDeserializer = JSONDeserializer<RandomUser>.objectsArrayDeserializer(keyPath: "results")
         let randomUsersJsonData = JSONDataResponses.randomUserJsonDataResponse
 
-        randomUsersJsonDeserializer.deserialize(randomUsersJsonData).continueWith { task in
-            XCTAssertEqual(task.result?.first?.firstName, "brad")
-            XCTAssertEqual(task.result?.first?.lastName, "gibson")
-            XCTAssertEqual(task.result?.first?.email, "brad.gibson@example.com")
+        randomUsersJsonDeserializer.deserialize(randomUsersJsonData)
+            .sink(receiveCompletion: { _ in },
+                  receiveValue: { randomUsers in
+                    XCTAssertEqual(randomUsers.first?.firstName, "brad")
+                    XCTAssertEqual(randomUsers.first?.lastName, "gibson")
+                    XCTAssertEqual(randomUsers.first?.email, "brad.gibson@example.com")
 
-            XCTAssertEqual(task.result?.last?.firstName, "Theo")
-            XCTAssertEqual(task.result?.last?.lastName, "Zhang")
-            XCTAssertEqual(task.result?.last?.email, "theo.zhang@example.com")
-
-            jsonDeserializerExpectation.fulfill()
-        }
-
-        wait(for: [jsonDeserializerExpectation], timeout: 10.0)
+                    XCTAssertEqual(randomUsers.last?.firstName, "Theo")
+                    XCTAssertEqual(randomUsers.last?.lastName, "Zhang")
+                    XCTAssertEqual(randomUsers.last?.email, "theo.zhang@example.com")
+            }).store(in: &subscriptions)
     }
 
     static var allTests = [

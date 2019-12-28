@@ -11,6 +11,10 @@ final class RandomUserApiClientTests: XCTestCase {
         randomUserApiClient.executeRequest(request: randomUserApiRequest) { fetchedUsers, error in
             if let fetchedUsers = fetchedUsers {
                 XCTAssertFalse(fetchedUsers.isEmpty)
+                XCTAssertTrue(fetchedUsers.count == 1)
+                XCTAssertNotNil(fetchedUsers.first?.firstName)
+                XCTAssertNotNil(fetchedUsers.first?.lastName)
+                XCTAssertNotNil(fetchedUsers.first?.email)
             }
             randomUserApiExpectation.fulfill()
         }

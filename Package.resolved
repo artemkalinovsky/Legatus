@@ -11,15 +11,6 @@
         }
       },
       {
-        "package": "BoltsSwift",
-        "repositoryURL": "https://github.com/BoltsFramework/Bolts-Swift.git",
-        "state": {
-          "branch": "master",
-          "revision": "24fcb2d57a1df5c4ab8a48a925213b2c0b68dc78",
-          "version": null
-        }
-      },
-      {
         "package": "JASON",
         "repositoryURL": "https://github.com/delba/JASON.git",
         "state": {
