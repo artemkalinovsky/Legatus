@@ -4,6 +4,23 @@ import BoltsSwift
 
 final class JSONDeserrializerTests: XCTestCase {
 
+    func testSingleObjectDeserialization() {
+        let jsonDeserializerExpectation = XCTestExpectation(description: "Execute json deserialization.")
+
+        let randomUserJsonDeserializer = JSONDeserializer<RandomUser>.singleObjectDeserializer(keyPath: "user")
+        let randomUserJsonData = JSONDataResponses.singleRandomUserJsonDataResponse
+
+        randomUserJsonDeserializer.deserialize(randomUserJsonData).continueWith { task in
+            XCTAssertEqual(task.result?.firstName, "brad")
+            XCTAssertEqual(task.result?.lastName, "gibson")
+            XCTAssertEqual(task.result?.email, "brad.gibson@example.com")
+
+            jsonDeserializerExpectation.fulfill()
+        }
+
+        wait(for: [jsonDeserializerExpectation], timeout: 10.0)
+    }
+
     func testObjectsArrayDeserialization() {
         let jsonDeserializerExpectation = XCTestExpectation(description: "Execute json deserialization.")
 
@@ -26,6 +43,7 @@ final class JSONDeserrializerTests: XCTestCase {
     }
 
     static var allTests = [
-        ("testObjectsArrayDeserialization", testObjectsArrayDeserialization),
+        ("testSingleObjectDeserialization", testSingleObjectDeserialization),
+        ("testObjectsArrayDeserialization", testObjectsArrayDeserialization)
     ]
 }
