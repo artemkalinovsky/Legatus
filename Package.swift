@@ -25,7 +25,7 @@ let package = Package(
             dependencies: ["Alamofire", "JASON", "BoltsSwift"]),
         .testTarget(
             name: "LegatusTests",
-            dependencies: ["Legatus"]),
+            dependencies: ["Legatus", "JASON", "BoltsSwift"]),
     ],
     swiftLanguageVersions: [.v5]
 )

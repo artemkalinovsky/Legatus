@@ -16,10 +16,10 @@ public protocol APIRequest {
     var multipartFormData: [String: URL]? { get }
 }
 
-public protocol SerializeableAPIRequest: APIRequest {
+public protocol DeserializeableRequest: APIRequest {
 
     associatedtype ResponseType
-    var serializer: ResponseDeserializer<ResponseType> { get }
+    var deserializer: ResponseDeserializer<ResponseType> { get }
 
 }
 

@@ -100,12 +100,10 @@ open class APIClient: NSObject {
                                 parameters: request.parameters,
                                 encoding: request.encoding,
                                 headers: request.headers).response {[weak self]  dataResponse in
-
-                                    let response = dataResponse.response
-                                    let data = dataResponse.data
-                                    let error = dataResponse.error
-
-                                    self?.handle(data: data, response: response, error: error, source: source)
+                                    self?.handle(data: dataResponse.data,
+                                                 response: dataResponse.response,
+                                                 error: dataResponse.error,
+                                                 source: source)
             }
         }
 
@@ -125,6 +123,13 @@ open class APIClient: NSObject {
             completion(data as? U, error)
         }
     }
+
+    func executeRequest<T: DeserializeableRequest, U>(request: T,
+                                                      completion: @escaping (U?, ResponseError?) -> Void) where U == T.ResponseType {
+         executeRequest(request,
+                        deserializer: request.deserializer,
+                        completion: completion)
+     }
 
     func handle(data: Data?,
                 response: HTTPURLResponse?,
