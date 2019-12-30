@@ -26,7 +26,7 @@ open class APIClient: NSObject {
 
     init(baseURL: URL) {
         let configuration: URLSessionConfiguration = {
-            let identifier = "com.company.app.background-session"
+            let identifier = "URL Session for \(baseURL.absoluteString). Id: \(UUID().uuidString)"
             let configuration = URLSessionConfiguration.background(withIdentifier: identifier)
             return configuration
         }()

@@ -22,13 +22,13 @@ final class ApiClientTests: XCTestCase {
         wait(for: [randomUserApiExpectation], timeout: 10.0)
     }
 
-    func testNotFoundResponse() {
+    func testErrorResponse() {
         let apiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
         let randomUserApiRequest = RandomUserApiRequest()
         let apiRequestExpectation = XCTestExpectation(description: "Execute api request.")
 
         apiClient.executeRequest(request: randomUserApiRequest) { result in
-            if case let .failure(responseError) = result {
+            if case .failure(_) = result {
                 XCTAssertTrue(true)
             }
             apiRequestExpectation.fulfill()
@@ -39,6 +39,6 @@ final class ApiClientTests: XCTestCase {
 
     static var allTests = [
         ("testNotEmptyResponse", testNotEmptyResponse),
-        ("testNotFoundResponse", testNotFoundResponse)
+        ("testErrorResponse", testErrorResponse)
     ]
 }
