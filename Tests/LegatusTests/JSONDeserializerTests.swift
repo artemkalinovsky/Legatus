@@ -37,6 +37,12 @@ final class JSONDeserrializerTests: XCTestCase {
             }).store(in: &subscriptions)
     }
 
+    override func tearDown() {
+        subscriptions.removeAll()
+        
+        super.tearDown()
+    }
+
     static var allTests = [
         ("testSingleObjectDeserialization", testSingleObjectDeserialization),
         ("testObjectsArrayDeserialization", testObjectsArrayDeserialization)

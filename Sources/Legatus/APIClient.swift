@@ -56,9 +56,9 @@ open class APIClient: NSObject {
 
     func executeRequest<T>(_ request: APIRequest,
                            deserializer: ResponseDeserializer<T>,
-                           completion: @escaping (T?, ResponseError?) -> Void) {
+                           completion: @escaping (Swift.Result<T, ResponseError>) -> Void) {
         if reachabilityManager?.isReachable == false {
-            completion(nil, ResponseError(errorCode: .noInternetConnection))
+            completion(.failure(ResponseError(errorCode: .noInternetConnection)))
         }
 
         if let requestMultipartDatas = request.multipartFormData {
@@ -90,49 +90,42 @@ open class APIClient: NSObject {
             //            }
 
         } else {
-            //            _ = manager.request(requestPath,
-            //                                method: request.method,
-            //                                parameters: request.parameters,
-            //                                encoding: request.encoding,
-            //                                headers: request.headers).response {[weak self]  dataResponse in
-            //                                    self?.handle(data: dataResponse.data,
-            //                                                 response: dataResponse.response,
-            //                                                 error: dataResponse.error,
-            //                                                 source: source)
-            //            }
             self.request(request)
                 .flatMap { self.handle(data: $0.data, response: $0.response, error: $0.error) }
                 .subscribe(on: deserializationQueue)
                 .flatMap { deserializer.deserialize($0, headers: $1) }
                 .receive(on: DispatchQueue.main)
                 .sink(receiveCompletion: { receivedCompletion in
-                    if case let .failure(error) = receivedCompletion {
-                        completion(nil, error as? ResponseError)
+                    if case let .failure(error) = receivedCompletion,
+                        let responseError = error as? ResponseError {
+                        completion(.failure(responseError))
                     }
                 }, receiveValue: { value in
-                    completion(value, nil)
+                    completion(.success(value))
                 }).store(in: &requestSubscriptions)
         }
-
-        //        source.task.continueOnSuccessWithTask (responseExecutor, continuation: { (data, headers) -> Task<T> in
-        //            return deserializer.deserialize(data, headers: headers)
-        //        }).continueOnSuccessWith(.mainThread, continuation: { response in
-        //            return response
-        //        }).continueWith { task in
-        //            completion(task.result, (task.error as? ResponseError))
-        //        }
     }
 
     func executeRequest<T, U>(_ request: APIRequest,
                               deserializer: ResponseDeserializer<T>,
-                              completion: @escaping (U?, ResponseError?) -> Void) {
-        executeRequest(request, deserializer: deserializer) { data, error in
-            completion(data as? U, error)
+                              completion: @escaping (Swift.Result<U, ResponseError>) -> Void) {
+        executeRequest(request, deserializer: deserializer) { result in
+            switch result {
+            case .success(let responseObject):
+                guard let castedResponseObject = responseObject as? U else {
+                    // TODO: add error handling
+                    return
+                }
+                completion(.success(castedResponseObject))
+            case .failure(let error):
+                completion(.failure(error))
+
+            }
         }
     }
 
     func executeRequest<T: DeserializeableRequest, U>(request: T,
-                                                      completion: @escaping (U?, ResponseError?) -> Void) where U == T.ResponseType {
+                                                      completion: @escaping (Swift.Result<U, ResponseError>) -> Void) where U == T.ResponseType {
         executeRequest(request,
                        deserializer: request.deserializer,
                        completion: completion)
