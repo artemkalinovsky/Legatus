@@ -2,7 +2,6 @@ import Foundation
 import Alamofire
 
 public typealias Method = Alamofire.HTTPMethod
-public typealias Cleaner = (() -> Void)?
 
 public protocol APIRequest {
     var fullPath: String? { get }
@@ -14,6 +13,7 @@ public protocol APIRequest {
     var anonymous: Bool { get }
     var encoding: ParameterEncoding { get }
     var multipartFormData: [String: URL]? { get }
+    var errorsKeyPath: String?
 }
 
 public protocol DeserializeableRequest: APIRequest {
@@ -42,7 +42,6 @@ public extension APIRequest where Self: AuthRequest {
 }
 
 public extension APIRequest {
-
     var fullPath: String? {
         return nil
     }
@@ -79,5 +78,8 @@ public extension APIRequest {
         return nil
     }
 
+    var errorsKeyPath: String? {
+        return nil
+    }
 }
 

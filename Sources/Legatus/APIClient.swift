@@ -58,9 +58,9 @@ open class APIClient: NSObject {
             completion(.failure(ResponseError(errorCode: .noInternetConnection)))
         }
 
-        let requestSubject = PassthroughSubject<(data: Data?, response: HTTPURLResponse?, error: Error?), Error>()
+        let responseSubject = PassthroughSubject<(data: Data?, response: HTTPURLResponse?, error: Error?), Error>()
 
-        requestSubject
+        responseSubject
             .flatMap { self.handle(data: $0.data, response: $0.response, error: $0.error) }
             .subscribe(on: deserializationQueue)
             .flatMap { deserializer.deserialize(data: $0, headers: $1) }
@@ -78,17 +78,17 @@ open class APIClient: NSObject {
             self.multipartRequest(request,
                                   requestInputMultipartData: requestInputMultipartData)
                 .sink(receiveCompletion: { receivedCompletion in
-                    requestSubject.send(completion: receivedCompletion)
+                    responseSubject.send(completion: receivedCompletion)
                 },
                       receiveValue: { dataResponse in
-                        requestSubject.send((dataResponse.data, dataResponse.response, dataResponse.error))
+                        responseSubject.send((dataResponse.data, dataResponse.response, dataResponse.error))
                 }).store(in: &requestSubscriptions)
         } else {
             self.request(request)
                 .sink(receiveCompletion: { receivedCompletion in
-                    requestSubject.send(completion: receivedCompletion)
+                    responseSubject.send(completion: receivedCompletion)
                 }, receiveValue: { defaultDataResponse in
-                    requestSubject.send((defaultDataResponse.data,
+                    responseSubject.send((defaultDataResponse.data,
                                          defaultDataResponse.response,
                                          defaultDataResponse.error))
                 }).store(in: &requestSubscriptions)
