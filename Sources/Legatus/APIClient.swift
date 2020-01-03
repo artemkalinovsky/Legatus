@@ -32,22 +32,19 @@ open class APIClient: NSObject {
         }()
         self.baseURL = baseURL
         manager = SessionManager(configuration: configuration)
+        
         super.init()
 
         if let host = baseURL.host {
-
             reachabilityManager = NetworkReachabilityManager(host: host)
-
             reachabilityManager?.listener = { status in
                 NotificationCenter.default.post(name: Notification.Name.APIClientReachabilityChangedNotification,
                                                 object: self,
                                                 userInfo: [Constants.hostNameKey: host,
                                                            Constants.reachableKey: status != .notReachable])
             }
-
             reachabilityManager?.startListening()
         }
-
     }
 
     deinit {

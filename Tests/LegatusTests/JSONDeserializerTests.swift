@@ -8,9 +8,8 @@ final class JSONDeserrializerTests: XCTestCase {
 
     func testSingleObjectDeserialization() {
         let randomUserJsonDeserializer = JSONDeserializer<RandomUser>.singleObjectDeserializer(keyPath: "user")
-        let randomUserJsonData = JSONDataResponses.singleRandomUserJsonDataResponse
 
-        randomUserJsonDeserializer.deserialize(randomUserJsonData)
+        randomUserJsonDeserializer.deserialize(JSONDataResponses.singleRandomUserJsonDataResponse)
             .sink(receiveCompletion: { _ in
             },
                   receiveValue: { randomUser in
@@ -22,9 +21,8 @@ final class JSONDeserrializerTests: XCTestCase {
 
     func testObjectsArrayDeserialization() {
         let randomUsersJsonDeserializer = JSONDeserializer<RandomUser>.objectsArrayDeserializer(keyPath: "results")
-        let randomUsersJsonData = JSONDataResponses.randomUserJsonDataResponse
 
-        randomUsersJsonDeserializer.deserialize(randomUsersJsonData)
+        randomUsersJsonDeserializer.deserialize(JSONDataResponses.randomUserJsonDataResponse)
             .sink(receiveCompletion: { _ in },
                   receiveValue: { randomUsers in
                     XCTAssertEqual(randomUsers.first?.firstName, "brad")
@@ -37,6 +35,21 @@ final class JSONDeserrializerTests: XCTestCase {
             }).store(in: &subscriptions)
     }
 
+    func testJsonMappingError() {
+        let brokenDeserializer = JSONDeserializer<BrokenRandomUser>.objectsArrayDeserializer(keyPath: "results")
+
+        brokenDeserializer.deserialize(JSONDataResponses.randomUserJsonDataResponse)
+            .sink(receiveCompletion: { completion in
+                guard case let .failure(error) = completion  else { return }
+                let jsonDeserializerError = error as? JSONDeserializerError
+                XCTAssertNotNil(jsonDeserializerError)
+            },
+                  receiveValue: { users in
+                    XCTAssertTrue(users.isEmpty)
+            })
+            .store(in: &subscriptions)
+    }
+
     override func tearDown() {
         subscriptions.removeAll()
         
@@ -45,6 +58,7 @@ final class JSONDeserrializerTests: XCTestCase {
 
     static var allTests = [
         ("testSingleObjectDeserialization", testSingleObjectDeserialization),
-        ("testObjectsArrayDeserialization", testObjectsArrayDeserialization)
+        ("testObjectsArrayDeserialization", testObjectsArrayDeserialization),
+        ("testJsonMappingError", testJsonMappingError)
     ]
 }

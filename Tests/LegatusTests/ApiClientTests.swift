@@ -34,7 +34,7 @@ final class ApiClientTests: XCTestCase {
             apiRequestExpectation.fulfill()
         }
 
-        wait(for: [apiRequestExpectation], timeout: 10.0)
+        wait(for: [apiRequestExpectation], timeout: 20.0)
     }
 
     static var allTests = [

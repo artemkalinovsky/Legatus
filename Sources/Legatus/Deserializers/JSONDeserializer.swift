@@ -6,11 +6,11 @@ public protocol JSONDeserializable {
     init?(json: JSON)
 }
 
-open class JSONDeserializer<T>: ResponseDeserializer<T> {
+public enum JSONDeserializerError: Error {
+    case jsonDeserializableInitFailed(String)
+}
 
-    public enum JSONDeserializerError: Error {
-        case jsonDeserializableInitFailed(String)
-    }
+open class JSONDeserializer<T>: ResponseDeserializer<T> {
 
     typealias Transform = ((Data, [String: Any]?) throws -> T)
 
