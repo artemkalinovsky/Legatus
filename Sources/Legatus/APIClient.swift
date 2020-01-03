@@ -58,33 +58,39 @@ open class APIClient: NSObject {
             completion(.failure(ResponseError(errorCode: .noInternetConnection)))
         }
 
+        let requestSubject = PassthroughSubject<(data: Data?, response: HTTPURLResponse?, error: Error?), Error>()
+
+        requestSubject
+            .flatMap { self.handle(data: $0.data, response: $0.response, error: $0.error) }
+            .subscribe(on: deserializationQueue)
+            .flatMap { deserializer.deserialize(data: $0, headers: $1) }
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { receivedCompletion in
+                if case let .failure(error) = receivedCompletion,
+                    let responseError = error as? ResponseError {
+                    completion(.failure(responseError))
+                }
+            }, receiveValue: { value in
+                completion(.success(value))
+            }).store(in: &requestSubscriptions)
+
         if let requestInputMultipartData = request.multipartFormData {
-            self.multipartRequest(request, requestInputMultipartData: requestInputMultipartData)
-                .flatMap { self.handle(data: $0.data, response: $0.response, error: $0.error) }
-                .subscribe(on: deserializationQueue)
-                .flatMap { deserializer.deserialize($0, headers: $1) }
-                .receive(on: DispatchQueue.main)
+            self.multipartRequest(request,
+                                  requestInputMultipartData: requestInputMultipartData)
                 .sink(receiveCompletion: { receivedCompletion in
-                    if case let .failure(error) = receivedCompletion,
-                        let responseError = error as? ResponseError {
-                        completion(.failure(responseError))
-                    }
-                }, receiveValue: { value in
-                    completion(.success(value))
+                    requestSubject.send(completion: receivedCompletion)
+                },
+                      receiveValue: { dataResponse in
+                        requestSubject.send((dataResponse.data, dataResponse.response, dataResponse.error))
                 }).store(in: &requestSubscriptions)
         } else {
             self.request(request)
-                .flatMap { self.handle(data: $0.data, response: $0.response, error: $0.error) }
-                .subscribe(on: deserializationQueue)
-                .flatMap { deserializer.deserialize($0, headers: $1) }
-                .receive(on: DispatchQueue.main)
                 .sink(receiveCompletion: { receivedCompletion in
-                    if case let .failure(error) = receivedCompletion,
-                        let responseError = error as? ResponseError {
-                        completion(.failure(responseError))
-                    }
-                }, receiveValue: { value in
-                    completion(.success(value))
+                    requestSubject.send(completion: receivedCompletion)
+                }, receiveValue: { defaultDataResponse in
+                    requestSubject.send((defaultDataResponse.data,
+                                         defaultDataResponse.response,
+                                         defaultDataResponse.error))
                 }).store(in: &requestSubscriptions)
         }
     }
@@ -128,7 +134,7 @@ open class APIClient: NSObject {
             var generatedError: ResponseError = ResponseError.resourceInvalidError()
             if let data = data, error == nil && !data.isEmpty {
                 let errordeserializer = JSONDeserializer<ResponseError>.singleObjectDeserializer()
-                errordeserializer.deserialize(data, headers: headers)
+                errordeserializer.deserialize(data: data, headers: headers)
                     .sink(receiveCompletion: { errorCompletion in
                         if case .failure = errorCompletion {
                             promise(.success((data, headers)))

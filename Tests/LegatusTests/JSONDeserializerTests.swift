@@ -9,7 +9,7 @@ final class JSONDeserrializerTests: XCTestCase {
     func testSingleObjectDeserialization() {
         let randomUserJsonDeserializer = JSONDeserializer<RandomUser>.singleObjectDeserializer(keyPath: "user")
 
-        randomUserJsonDeserializer.deserialize(JSONDataResponses.singleRandomUserJsonDataResponse)
+        randomUserJsonDeserializer.deserialize(data: JSONDataResponses.singleRandomUserJsonDataResponse)
             .sink(receiveCompletion: { _ in
             },
                   receiveValue: { randomUser in
@@ -22,7 +22,7 @@ final class JSONDeserrializerTests: XCTestCase {
     func testObjectsArrayDeserialization() {
         let randomUsersJsonDeserializer = JSONDeserializer<RandomUser>.objectsArrayDeserializer(keyPath: "results")
 
-        randomUsersJsonDeserializer.deserialize(JSONDataResponses.randomUserJsonDataResponse)
+        randomUsersJsonDeserializer.deserialize(data: JSONDataResponses.randomUserJsonDataResponse)
             .sink(receiveCompletion: { _ in },
                   receiveValue: { randomUsers in
                     XCTAssertEqual(randomUsers.first?.firstName, "brad")
@@ -38,7 +38,7 @@ final class JSONDeserrializerTests: XCTestCase {
     func testJsonMappingError() {
         let brokenDeserializer = JSONDeserializer<BrokenRandomUser>.objectsArrayDeserializer(keyPath: "results")
 
-        brokenDeserializer.deserialize(JSONDataResponses.randomUserJsonDataResponse)
+        brokenDeserializer.deserialize(data: JSONDataResponses.randomUserJsonDataResponse)
             .sink(receiveCompletion: { completion in
                 guard case let .failure(error) = completion  else { return }
                 let jsonDeserializerError = error as? JSONDeserializerError
