@@ -12,7 +12,7 @@ open class APIClient: NSObject {
         return reachabilityManager?.isReachable ?? false
     }
 
-    var progress: Double = 0
+    private var progress: Double = 0
 
     private let baseURL: URL
     private var manager: SessionManager
@@ -51,41 +51,27 @@ open class APIClient: NSObject {
         reachabilityManager?.stopListening()
     }
 
-    func executeRequest<T>(_ request: APIRequest,
-                           deserializer: ResponseDeserializer<T>,
-                           completion: @escaping (Swift.Result<T, ResponseError>) -> Void) {
+    public func executeRequest<T>(_ request: APIRequest,
+                                  deserializer: ResponseDeserializer<T>,
+                                  completion: @escaping (Swift.Result<T, ResponseError>) -> Void) {
         if reachabilityManager?.isReachable == false {
             completion(.failure(ResponseError(errorCode: .noInternetConnection)))
         }
 
-        if let requestMultipartDatas = request.multipartFormData {
-            //            manager.upload(multipartFormData: { multipartFormData in
-            //                for requestMultipartData in requestMultipartDatas {
-            //                    multipartFormData.append(requestMultipartData.value, withName: requestMultipartData.key)
-            //                }
-            //            }, to: requestPath,
-            //               method: request.method,
-            //               headers: request.headers) { result in
-            //                switch result {
-            //                case .success(let upload, _, _):
-            //
-            //                    upload.uploadProgress(closure: {[weak self] (progress) in
-            //                        self?.progress = progress.fractionCompleted
-            //                    })
-            //                    upload.responseData(completionHandler: { [weak self] dataResponse in
-            //                        let response = dataResponse.response
-            //                        let data = dataResponse.data
-            //                        let error = dataResponse.error
-            //                        self?.handle(data: data, response: response, error: error, source: source)
-            //                    })
-            //                case .failure(let encodingError):
-            //                    let generatedError = ResponseError(error: encodingError)
-            //                    if !source.task.completed {
-            //                        source.set(error: generatedError!)
-            //                    }
-            //                }
-            //            }
-
+        if let requestInputMultipartData = request.multipartFormData {
+            self.multipartRequest(request, requestInputMultipartData: requestInputMultipartData)
+                .flatMap { self.handle(data: $0.data, response: $0.response, error: $0.error) }
+                .subscribe(on: deserializationQueue)
+                .flatMap { deserializer.deserialize($0, headers: $1) }
+                .receive(on: DispatchQueue.main)
+                .sink(receiveCompletion: { receivedCompletion in
+                    if case let .failure(error) = receivedCompletion,
+                        let responseError = error as? ResponseError {
+                        completion(.failure(responseError))
+                    }
+                }, receiveValue: { value in
+                    completion(.success(value))
+                }).store(in: &requestSubscriptions)
         } else {
             self.request(request)
                 .flatMap { self.handle(data: $0.data, response: $0.response, error: $0.error) }
@@ -103,14 +89,14 @@ open class APIClient: NSObject {
         }
     }
 
-    func executeRequest<T, U>(_ request: APIRequest,
-                              deserializer: ResponseDeserializer<T>,
-                              completion: @escaping (Swift.Result<U, ResponseError>) -> Void) {
+    public func executeRequest<T, U>(_ request: APIRequest,
+                                     deserializer: ResponseDeserializer<T>,
+                                     completion: @escaping (Swift.Result<U, ResponseError>) -> Void) {
         executeRequest(request, deserializer: deserializer) { result in
             switch result {
             case .success(let responseObject):
                 guard let castedResponseObject = responseObject as? U else {
-                    // TODO: add error handling
+                    completion(.failure(ResponseError(errorCode: .wrongResponseType)))
                     return
                 }
                 completion(.success(castedResponseObject))
@@ -121,16 +107,21 @@ open class APIClient: NSObject {
         }
     }
 
-    func executeRequest<T: DeserializeableRequest, U>(request: T,
-                                                      completion: @escaping (Swift.Result<U, ResponseError>) -> Void) where U == T.ResponseType {
+    public func executeRequest<T: DeserializeableRequest, U>(request: T,
+                                                             completion: @escaping (Swift.Result<U, ResponseError>) -> Void) where U == T.ResponseType {
         executeRequest(request,
                        deserializer: request.deserializer,
                        completion: completion)
     }
 
-    func handle(data: Data?,
-                response: HTTPURLResponse?,
-                error: Error?) -> Future <(Data, [String: Any]?), Error> {
+    public func cancelAllRequests() {
+        manager.session.invalidateAndCancel()
+        manager = SessionManager()
+    }
+
+    private func handle(data: Data?,
+                        response: HTTPURLResponse?,
+                        error: Error?) -> Future <(Data, [String: Any]?), Error> {
         var errorDeserializerSubscriptions = Set<AnyCancellable>()
         return Future { promise in
             let headers = response?.allHeaderFields as? [String: Any]
@@ -147,8 +138,7 @@ open class APIClient: NSObject {
                             deserializedError.errorCode = APIErrorCode(code: response?.statusCode)
                             promise(.failure(deserializedError))
                     }).store(in: &errorDeserializerSubscriptions)
-            } else if let statusCode = response?.statusCode,
-                (200..<300).contains(statusCode),
+            } else if let statusCode = response?.statusCode, (200..<300).contains(statusCode),
                 data?.isEmpty == true {
                 var success = true
                 let data = Data(bytes: &success, count: MemoryLayout.size(ofValue: success))
@@ -163,11 +153,6 @@ open class APIClient: NSObject {
         }
     }
 
-    func cancelAllRequests() {
-        manager.session.invalidateAndCancel()
-        manager = SessionManager()
-    }
-
     private func request(_ request: APIRequest) -> Future<DefaultDataResponse, Error> {
         return Future { promise in
             _ = self.manager.request(self.path(for: request),
@@ -180,17 +165,33 @@ open class APIClient: NSObject {
         }
     }
 
-    //    private func multipartRequest(_ request: APIRequest) -> Future<DefaultDataResponse, Never> {
-    //        return Future { promise in
-    //            _ = self.manager.request(self.path(for: request),
-    //                                     method: request.method,
-    //                                     parameters: request.parameters,
-    //                                     encoding: request.encoding,
-    //                                     headers: request.headers).response {dataResponse in
-    //                                        promise(.success(dataResponse))
-    //            }
-    //        }
-    //    }
+    private func multipartRequest(_ request: APIRequest,
+                                  requestInputMultipartData: [String: URL]) -> Future<DataResponse<Data>, Error> {
+        progress = 0
+        return Future { promise in
+            self.manager.upload(multipartFormData: { multipartFormData in
+                for requestMultipartData in requestInputMultipartData {
+                    multipartFormData.append(requestMultipartData.value,
+                                             withName: requestMultipartData.key)
+                }
+            }, to: self.path(for: request),
+               method: request.method,
+               headers: request.headers) { result in
+                switch result {
+                case .success(let upload, _, _):
+                    upload.uploadProgress(closure: { [weak self] progress in
+                        self?.progress = progress.fractionCompleted
+                    })
+                    upload.responseData(completionHandler: { dataResponse in
+                        promise(.success(dataResponse))
+                    })
+                case .failure(let encodingError):
+                    let generatedError = ResponseError(error: encodingError)
+                    promise(.failure(generatedError ?? ResponseError.resourceInvalidError()))
+                }
+            }
+        }
+    }
 
 
     private func path(for request: APIRequest) -> String {

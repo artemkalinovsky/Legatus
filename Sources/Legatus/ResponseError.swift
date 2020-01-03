@@ -15,6 +15,7 @@ public enum APIErrorCode: Int {
     case authenticationFailed = 401
     case invalidResponse = 3106
     case unknown = 1090
+    case wrongResponseType
 
     var message: String {
         switch self {
@@ -34,6 +35,8 @@ public enum APIErrorCode: Int {
             return "Service temporarily unavailable."
         case .invalidResponse:
             return "Invalid response."
+        case .wrongResponseType:
+            return "Wrong response type."
         default:
             return "Unknown error \(rawValue)."
         }
