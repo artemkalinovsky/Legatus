@@ -81,8 +81,8 @@ open class ResponseError: Error, JSONDeserializable {
         self.message = message ?? errorCode.message
     }
 
-    class func resourceInvalidError() -> ResponseError {
-        return ResponseError(errorCode: .invalidResponse)
+    class func unknownError() -> ResponseError {
+        return ResponseError(errorCode: .unknown)
     }
 
     convenience init?(error: Error?) {

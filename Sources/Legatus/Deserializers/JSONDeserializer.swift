@@ -25,8 +25,7 @@ open class JSONDeserializer<T>: ResponseDeserializer<T> {
             if let object = jsonObject as? T {
                 return object
             }
-
-            throw ResponseError.resourceInvalidError()
+            throw JSONDeserializerError.jsonDeserializableInitFailed("Wrong result type: \(jsonObject.self). Expected \(T.self)")
         }
     }
 

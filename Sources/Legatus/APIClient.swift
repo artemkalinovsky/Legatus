@@ -127,7 +127,7 @@ open class APIClient: NSObject {
         var errorDeserializerSubscriptions = Set<AnyCancellable>()
         return Future { promise in
             let headers = response?.allHeaderFields as? [String: Any]
-            var generatedError: ResponseError = ResponseError.resourceInvalidError()
+            var generatedError: ResponseError = ResponseError.unknownError()
             if let data = data, !data.isEmpty {
                 let errordeserializer = JSONDeserializer<ResponseError>.singleObjectDeserializer(keyPath: errorKeypath)
                 errordeserializer.deserialize(data: data, headers: headers)
@@ -156,7 +156,7 @@ open class APIClient: NSObject {
         if let responseError = error as? ResponseError {
             return responseError
         }
-        return ResponseError(error: error) ?? ResponseError.resourceInvalidError()
+        return ResponseError(error: error) ?? ResponseError.unknownError()
     }
 
     private func request(_ request: APIRequest) -> Future<DefaultDataResponse, Error> {
@@ -201,7 +201,7 @@ open class APIClient: NSObject {
                     })
                 case .failure(let encodingError):
                     let generatedError = ResponseError(error: encodingError)
-                    promise(.failure(generatedError ?? ResponseError.resourceInvalidError()))
+                    promise(.failure(generatedError ?? ResponseError.unknownError()))
                 }
             }
         }
