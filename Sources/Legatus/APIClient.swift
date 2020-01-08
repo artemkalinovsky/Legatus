@@ -156,16 +156,27 @@ open class APIClient: NSObject {
         if let responseError = error as? ResponseError {
             return responseError
         }
+        if error is AuthRequestError {
+            return ResponseError(errorCode: .missedAccessToken)
+        }
         return ResponseError(error: error) ?? ResponseError.unknownError()
     }
 
     private func request(_ request: APIRequest) -> Future<DefaultDataResponse, Error> {
-        return Future { promise in
-            _ = self.manager.request(self.path(for: request),
+        return Future { [weak self] promise in
+            guard let self = self else { return }
+            var headers = [String: String]()
+            switch self.configureHeaders(for: request) {
+            case .success(let configuredHeaders):
+                headers = configuredHeaders
+            case .failure(let responseError):
+                promise(.failure(responseError))
+            }
+            _ = self.manager.request(self.configurePath(for: request),
                                      method: request.method,
                                      parameters: request.parameters,
                                      encoding: request.encoding,
-                                     headers: request.headers).response { dataResponse in
+                                     headers: headers).response { dataResponse in
                                         guard let error = dataResponse.error else {
                                             promise(.success(dataResponse))
                                             return
@@ -178,15 +189,23 @@ open class APIClient: NSObject {
     private func multipartRequest(_ request: APIRequest,
                                   requestInputMultipartData: [String: URL]) -> Future<DataResponse<Data>, Error> {
         progress = 0
-        return Future { promise in
+        return Future { [weak self] promise in
+            guard let self = self else { return }
+            var headers = [String: String]()
+            switch self.configureHeaders(for: request) {
+            case .success(let configuredHeaders):
+                headers = configuredHeaders
+            case .failure(let responseError):
+                promise(.failure(responseError))
+            }
             self.manager.upload(multipartFormData: { multipartFormData in
                 for requestMultipartData in requestInputMultipartData {
                     multipartFormData.append(requestMultipartData.value,
                                              withName: requestMultipartData.key)
                 }
-            }, to: self.path(for: request),
+            }, to: self.configurePath(for: request),
                method: request.method,
-               headers: request.headers) { result in
+               headers: headers) { result in
                 switch result {
                 case .success(let upload, _, _):
                     upload.uploadProgress(closure: { [weak self] progress in
@@ -207,8 +226,17 @@ open class APIClient: NSObject {
         }
     }
 
+    private func configureHeaders(for request: APIRequest) -> Swift.Result<[String: String], ResponseError> {
+        var headers = [String: String]()
+        do {
+            headers = try request.headers()
+        } catch {
+            return .failure(ResponseError(errorCode: .missedAccessToken))
+        }
+        return .success(headers)
+    }
 
-    private func path(for request: APIRequest) -> String {
+    private func configurePath(for request: APIRequest) -> String {
         var requestPath = baseURL.appendingPathComponent(request.path).absoluteString
         if let fullPath = request.fullPath, !fullPath.isEmpty {
             requestPath = fullPath

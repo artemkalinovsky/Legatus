@@ -30,7 +30,8 @@ open class JSONDeserializer<T>: ResponseDeserializer<T> {
     }
 
     public override func deserialize(data: Data, headers: [String: Any]? = nil) -> Future<T, Error> {
-        return Future { promise in
+        return Future { [weak self] promise in
+            guard let self = self else { return }
             do {
                 let object = try self.transform(data, headers)
                 promise(.success(object))

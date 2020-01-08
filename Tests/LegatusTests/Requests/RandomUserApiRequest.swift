@@ -1,5 +1,5 @@
 import Foundation
-import Legatus
+@testable import Legatus
 
 final class RandomUserApiRequest: DeserializeableRequest {
 

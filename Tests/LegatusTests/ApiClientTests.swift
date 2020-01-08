@@ -61,6 +61,8 @@ final class ApiClientTests: XCTestCase {
         apiClient.executeRequest(request: randomUserApiRequest) { result in
             if case .failure(_) = result {
                 XCTAssertTrue(true)
+            } else {
+                XCTAssertTrue(false, "Unexpected success response.")
             }
             apiRequestExpectation.fulfill()
         }
@@ -68,9 +70,46 @@ final class ApiClientTests: XCTestCase {
         wait(for: [apiRequestExpectation], timeout: 20.0)
     }
 
+    func testAuthRequest() {
+        let apiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
+        let testAuthRequest = TestAuthRequest()
+        testAuthRequest.accessToken = "test_token"
+        let apiRequestExpectation = XCTestExpectation(description: "Execute api request.")
+
+        apiClient.executeRequest(request: testAuthRequest) { result in
+            if case .failure(_) = result {
+                XCTAssertTrue(true)
+            } else {
+                XCTAssertTrue(false, "Unexpected success response.")
+            }
+            apiRequestExpectation.fulfill()
+        }
+
+        wait(for: [apiRequestExpectation], timeout: 20.0)
+    }
+
+    func testMissedAccessToken() {
+        let apiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
+        let brokenAuthRequest = TestAuthRequest()
+        let apiRequestExpectation = XCTestExpectation(description: "Execute api request.")
+
+        apiClient.executeRequest(request: brokenAuthRequest) { result in
+            if case let .failure(error) = result {
+                XCTAssertTrue(error.errorCode == .missedAccessToken)
+            } else {
+                XCTAssertTrue(false, "Unexpected success response.")
+            }
+            apiRequestExpectation.fulfill()
+        }
+
+        wait(for: [apiRequestExpectation], timeout: 5.0)
+    }
+
     static var allTests = [
         ("testNotEmptyResponse", testNotEmptyResponse),
         ("testParallelRequests", testParallelRequests),
-        ("testErrorResponse", testErrorResponse)
+        ("testErrorResponse", testErrorResponse),
+        ("testAuthRequest", testAuthRequest),
+        ("testMissedAccessToken", testMissedAccessToken)
     ]
 }

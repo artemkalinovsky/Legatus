@@ -1,6 +1,6 @@
 import Foundation
-import Legatus
 import JASON
+@testable import Legatus
 
 final class RandomUser: JSONDeserializable {
     let firstName: String?

@@ -16,6 +16,7 @@ public enum APIErrorCode: Int {
     case invalidResponse = 3106
     case unknown = 1090
     case wrongResponseType
+    case missedAccessToken
 
     var message: String {
         switch self {
@@ -37,6 +38,8 @@ public enum APIErrorCode: Int {
             return "Invalid response."
         case .wrongResponseType:
             return "Wrong response type."
+        case .missedAccessToken:
+            return "Access token for Auth request shouldn't be nil."
         default:
             return "Unknown error \(rawValue)."
         }

@@ -8,10 +8,10 @@ public protocol APIRequest {
     var path: String { get }
     var parameters: [String: Any]? { get }
     var method: Method { get }
-    var headers: [String: String] { get }
     var encoding: ParameterEncoding { get }
     var multipartFormData: [String: URL]? { get }
     var errorKeyPath: String? { get }
+    func headers() throws -> [String: String]
 }
 
 public protocol DeserializeableRequest: APIRequest {
@@ -21,22 +21,32 @@ public protocol DeserializeableRequest: APIRequest {
 
 }
 
-public protocol AuthRequest {
+public enum AuthRequestError: Error {
+    case accessTokenIsNil
+}
+
+public protocol AuthRequest: APIRequest {
 
     var accessToken: String? { get set }
+    var accessTokenPrefix: String { get }
 
 }
 
 public extension APIRequest where Self: AuthRequest {
 
-    // TODO: Convert to throwable method
-    var headers: [String: String] {
+     var accessTokenPrefix: String {
+        return "Bearer"
+    }
+
+    func headers() throws -> [String: String] {
+        guard let accessToken = accessToken else {
+            throw AuthRequestError.accessTokenIsNil
+        }
         return [
-            "Authorization": "Token token=" + (accessToken ?? ""),
+            "Authorization": "\(accessTokenPrefix) \(accessToken)",
             "accept-language": Locale.current.identifier
         ]
     }
-
 }
 
 public extension APIRequest {
@@ -56,7 +66,7 @@ public extension APIRequest {
         return nil
     }
 
-    var headers: [String: String] {
+    func headers() throws -> [String: String] {
         return [:]
     }
 
