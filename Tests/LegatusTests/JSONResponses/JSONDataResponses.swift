@@ -1,7 +1,7 @@
 import Foundation
 
 struct JSONDataResponses {
-     static let singleRandomUserJsonDataResponse = """
+    static let singleRandomUserJsonDataResponse = """
           {
                         "user":
                            {
@@ -180,4 +180,26 @@ struct JSONDataResponses {
            }
         }
 """.data(using: .utf8)!
+
+    static let errorJsonDataResponse =  """
+    {
+    "timestamp":"2019-09-16T22:14:45.624+0000",
+    "status":500,
+    "error":"Internal Server Error",
+    "message":"Test error message.",
+    "path":"/api/book/1"
+    }
+    """.data(using: .utf8)!
+
+    static let errorKeyPathJsonDataResponse =  """
+        {
+        "error": {
+        "timestamp":"2019-09-16T22:14:45.624+0000",
+        "status":500,
+        "error":"Internal Server Error",
+        "message":"Test error message.",
+        "path":"/api/book/1"
+        }
+        }
+        """.data(using: .utf8)!
 }

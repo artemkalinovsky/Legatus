@@ -58,17 +58,16 @@ open class APIClient: NSObject {
             completion(.failure(ResponseError(errorCode: .noInternetConnection)))
         }
 
-        let responseSubject = PassthroughSubject<(data: Data?, response: HTTPURLResponse?, error: Error?), Error>()
+        let responseSubject = PassthroughSubject<(data: Data?, response: HTTPURLResponse?), Error>()
 
         responseSubject
-            .flatMap { self.handle(data: $0.data, response: $0.response, error: $0.error) }
+            .flatMap { self.handle(data: $0.data, response: $0.response, errorKeypath: request.errorKeyPath) }
             .subscribe(on: deserializationQueue)
             .flatMap { deserializer.deserialize(data: $0, headers: $1) }
             .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { receivedCompletion in
-                if case let .failure(error) = receivedCompletion,
-                    let responseError = error as? ResponseError {
-                    completion(.failure(responseError))
+                if case let .failure(error) = receivedCompletion {
+                    completion(.failure(self.handle(error: error)))
                 }
             }, receiveValue: { value in
                 completion(.success(value))
@@ -81,16 +80,14 @@ open class APIClient: NSObject {
                     responseSubject.send(completion: receivedCompletion)
                 },
                       receiveValue: { dataResponse in
-                        responseSubject.send((dataResponse.data, dataResponse.response, dataResponse.error))
+                        responseSubject.send((dataResponse.data, dataResponse.response))
                 }).store(in: &requestSubscriptions)
         } else {
             self.request(request)
                 .sink(receiveCompletion: { receivedCompletion in
                     responseSubject.send(completion: receivedCompletion)
                 }, receiveValue: { defaultDataResponse in
-                    responseSubject.send((defaultDataResponse.data,
-                                         defaultDataResponse.response,
-                                         defaultDataResponse.error))
+                    responseSubject.send((defaultDataResponse.data, defaultDataResponse.response))
                 }).store(in: &requestSubscriptions)
         }
     }
@@ -108,7 +105,6 @@ open class APIClient: NSObject {
                 completion(.success(castedResponseObject))
             case .failure(let error):
                 completion(.failure(error))
-
             }
         }
     }
@@ -127,13 +123,13 @@ open class APIClient: NSObject {
 
     private func handle(data: Data?,
                         response: HTTPURLResponse?,
-                        error: Error?) -> Future <(Data, [String: Any]?), Error> {
+                        errorKeypath: String?) -> Future <(Data, [String: Any]?), Error> {
         var errorDeserializerSubscriptions = Set<AnyCancellable>()
         return Future { promise in
             let headers = response?.allHeaderFields as? [String: Any]
             var generatedError: ResponseError = ResponseError.resourceInvalidError()
-            if let data = data, error == nil && !data.isEmpty {
-                let errordeserializer = JSONDeserializer<ResponseError>.singleObjectDeserializer()
+            if let data = data, !data.isEmpty {
+                let errordeserializer = JSONDeserializer<ResponseError>.singleObjectDeserializer(keyPath: errorKeypath)
                 errordeserializer.deserialize(data: data, headers: headers)
                     .sink(receiveCompletion: { errorCompletion in
                         if case .failure = errorCompletion {
@@ -152,11 +148,15 @@ open class APIClient: NSObject {
             } else if let response = response, let statusCodeError = ResponseError(errorCode: response.statusCode) {
                 generatedError = statusCodeError
                 promise(.failure(generatedError))
-            } else if let error = error {
-                generatedError = ResponseError(error: error)!
-                promise(.failure(generatedError))
             }
         }
+    }
+
+    private func handle(error: Error) -> ResponseError {
+        if let responseError = error as? ResponseError {
+            return responseError
+        }
+        return ResponseError(error: error) ?? ResponseError.resourceInvalidError()
     }
 
     private func request(_ request: APIRequest) -> Future<DefaultDataResponse, Error> {
@@ -166,7 +166,11 @@ open class APIClient: NSObject {
                                      parameters: request.parameters,
                                      encoding: request.encoding,
                                      headers: request.headers).response { dataResponse in
-                                        promise(.success(dataResponse))
+                                        guard let error = dataResponse.error else {
+                                            promise(.success(dataResponse))
+                                            return
+                                        }
+                                        promise(.failure(error))
             }
         }
     }
@@ -189,7 +193,11 @@ open class APIClient: NSObject {
                         self?.progress = progress.fractionCompleted
                     })
                     upload.responseData(completionHandler: { dataResponse in
-                        promise(.success(dataResponse))
+                        guard let error = dataResponse.error else {
+                            promise(.success(dataResponse))
+                            return
+                        }
+                        promise(.failure(error))
                     })
                 case .failure(let encodingError):
                     let generatedError = ResponseError(error: encodingError)

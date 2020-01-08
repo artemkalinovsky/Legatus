@@ -8,12 +8,10 @@ public protocol APIRequest {
     var path: String { get }
     var parameters: [String: Any]? { get }
     var method: Method { get }
-    var scopes: [String]? { get }
     var headers: [String: String] { get }
-    var anonymous: Bool { get }
     var encoding: ParameterEncoding { get }
     var multipartFormData: [String: URL]? { get }
-    var errorsKeyPath: String?
+    var errorKeyPath: String? { get }
 }
 
 public protocol DeserializeableRequest: APIRequest {
@@ -62,14 +60,6 @@ public extension APIRequest {
         return [:]
     }
 
-    var scopes: [String]? {
-        return nil
-    }
-
-    var anonymous: Bool {
-        return false
-    }
-
     var encoding: ParameterEncoding {
         return method == .get ? URLEncoding.default : JSONEncoding.default
     }
@@ -78,7 +68,7 @@ public extension APIRequest {
         return nil
     }
 
-    var errorsKeyPath: String? {
+    var errorKeyPath: String? {
         return nil
     }
 }

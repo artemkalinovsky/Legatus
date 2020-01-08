@@ -60,18 +60,8 @@ open class ResponseError: Error, JSONDeserializable {
     var message: String?
 
     public required init?(json: JSON) {
-        return nil
-    }
-
-    required public init?(decodingRepresentation representation: [String: Any]) {
-        if let errors = representation["errors"] as? [String] {
-            self.errorCode = APIErrorCode.invalidResponse
-            let fullMessage = errors.first ?? ""
-            let index = fullMessage.index(fullMessage.startIndex, offsetBy: min(fullMessage.count, 200))
-            self.message = String(fullMessage[..<index])
-        } else {
-            return nil
-        }
+        self.errorCode = APIErrorCode.invalidResponse
+        self.message = json["message"].string
     }
 
     init?(errorCode: Int, message: String? = nil) {
