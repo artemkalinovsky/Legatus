@@ -12,7 +12,7 @@ open class APIClient: NSObject {
         return reachabilityManager?.isReachable ?? false
     }
 
-    private var progress: Double = 0
+    private(set) var multipartRequestProgress: Double = 0
 
     private let baseURL: URL
     private var manager: SessionManager
@@ -52,6 +52,7 @@ open class APIClient: NSObject {
     }
 
     public func executeRequest<T>(_ request: APIRequest,
+                                  retries: Int = 0,
                                   deserializer: ResponseDeserializer<T>,
                                   completion: @escaping (Swift.Result<T, ResponseError>) -> Void) {
         if reachabilityManager?.isReachable == false {
@@ -74,8 +75,8 @@ open class APIClient: NSObject {
             }).store(in: &requestSubscriptions)
 
         if let requestInputMultipartData = request.multipartFormData {
-            self.multipartRequest(request,
-                                  requestInputMultipartData: requestInputMultipartData)
+            self.multipartRequest(request, requestInputMultipartData: requestInputMultipartData)
+                .retry(retries)
                 .sink(receiveCompletion: { receivedCompletion in
                     responseSubject.send(completion: receivedCompletion)
                 },
@@ -84,6 +85,7 @@ open class APIClient: NSObject {
                 }).store(in: &requestSubscriptions)
         } else {
             self.request(request)
+                .retry(retries)
                 .sink(receiveCompletion: { receivedCompletion in
                     responseSubject.send(completion: receivedCompletion)
                 }, receiveValue: { defaultDataResponse in
@@ -92,26 +94,11 @@ open class APIClient: NSObject {
         }
     }
 
-    public func executeRequest<T, U>(_ request: APIRequest,
-                                     deserializer: ResponseDeserializer<T>,
-                                     completion: @escaping (Swift.Result<U, ResponseError>) -> Void) {
-        executeRequest(request, deserializer: deserializer) { result in
-            switch result {
-            case .success(let responseObject):
-                guard let castedResponseObject = responseObject as? U else {
-                    completion(.failure(ResponseError(errorCode: .wrongResponseType)))
-                    return
-                }
-                completion(.success(castedResponseObject))
-            case .failure(let error):
-                completion(.failure(error))
-            }
-        }
-    }
-
     public func executeRequest<T: DeserializeableRequest, U>(request: T,
+                                                             retries: Int = 0,
                                                              completion: @escaping (Swift.Result<U, ResponseError>) -> Void) where U == T.ResponseType {
         executeRequest(request,
+                       retries: retries,
                        deserializer: request.deserializer,
                        completion: completion)
     }
@@ -162,68 +149,72 @@ open class APIClient: NSObject {
         return ResponseError(error: error) ?? ResponseError.unknownError()
     }
 
-    private func request(_ request: APIRequest) -> Future<DefaultDataResponse, Error> {
-        return Future { [weak self] promise in
-            guard let self = self else { return }
-            var headers = [String: String]()
-            switch self.configureHeaders(for: request) {
-            case .success(let configuredHeaders):
-                headers = configuredHeaders
-            case .failure(let responseError):
-                promise(.failure(responseError))
+    private func request(_ request: APIRequest) -> AnyPublisher<DefaultDataResponse, Error> {
+        return Deferred {
+            return Future<DefaultDataResponse, Error> { [weak self] promise in
+                guard let self = self else { return }
+                var headers = [String: String]()
+                switch self.configureHeaders(for: request) {
+                case .success(let configuredHeaders):
+                    headers = configuredHeaders
+                case .failure(let responseError):
+                    promise(.failure(responseError))
+                }
+                _ = self.manager.request(self.configurePath(for: request),
+                                         method: request.method,
+                                         parameters: request.parameters,
+                                         encoding: request.encoding,
+                                         headers: headers).response { dataResponse in
+                                            guard let error = dataResponse.error else {
+                                                promise(.success(dataResponse))
+                                                return
+                                            }
+                                            promise(.failure(error))
+                }
             }
-            _ = self.manager.request(self.configurePath(for: request),
-                                     method: request.method,
-                                     parameters: request.parameters,
-                                     encoding: request.encoding,
-                                     headers: headers).response { dataResponse in
-                                        guard let error = dataResponse.error else {
-                                            promise(.success(dataResponse))
-                                            return
-                                        }
-                                        promise(.failure(error))
-            }
-        }
+        }.eraseToAnyPublisher()
     }
 
     private func multipartRequest(_ request: APIRequest,
-                                  requestInputMultipartData: [String: URL]) -> Future<DataResponse<Data>, Error> {
-        progress = 0
-        return Future { [weak self] promise in
-            guard let self = self else { return }
-            var headers = [String: String]()
-            switch self.configureHeaders(for: request) {
-            case .success(let configuredHeaders):
-                headers = configuredHeaders
-            case .failure(let responseError):
-                promise(.failure(responseError))
-            }
-            self.manager.upload(multipartFormData: { multipartFormData in
-                for requestMultipartData in requestInputMultipartData {
-                    multipartFormData.append(requestMultipartData.value,
-                                             withName: requestMultipartData.key)
+                                  requestInputMultipartData: [String: URL]) -> AnyPublisher<DataResponse<Data>, Error> {
+        return Deferred {
+            return Future<DataResponse<Data>, Error> { [weak self] promise in
+                guard let self = self else { return }
+                self.multipartRequestProgress = 0
+                var headers = [String: String]()
+                switch self.configureHeaders(for: request) {
+                case .success(let configuredHeaders):
+                    headers = configuredHeaders
+                case .failure(let responseError):
+                    promise(.failure(responseError))
                 }
-            }, to: self.configurePath(for: request),
-               method: request.method,
-               headers: headers) { result in
-                switch result {
-                case .success(let upload, _, _):
-                    upload.uploadProgress(closure: { [weak self] progress in
-                        self?.progress = progress.fractionCompleted
-                    })
-                    upload.responseData(completionHandler: { dataResponse in
-                        guard let error = dataResponse.error else {
-                            promise(.success(dataResponse))
-                            return
-                        }
-                        promise(.failure(error))
-                    })
-                case .failure(let encodingError):
-                    let generatedError = ResponseError(error: encodingError)
-                    promise(.failure(generatedError ?? ResponseError.unknownError()))
+                self.manager.upload(multipartFormData: { multipartFormData in
+                    for requestMultipartData in requestInputMultipartData {
+                        multipartFormData.append(requestMultipartData.value,
+                                                 withName: requestMultipartData.key)
+                    }
+                }, to: self.configurePath(for: request),
+                   method: request.method,
+                   headers: headers) { result in
+                    switch result {
+                    case .success(let upload, _, _):
+                        upload.uploadProgress(closure: { [weak self] progress in
+                            self?.multipartRequestProgress = progress.fractionCompleted
+                        })
+                        upload.responseData(completionHandler: { dataResponse in
+                            guard let error = dataResponse.error else {
+                                promise(.success(dataResponse))
+                                return
+                            }
+                            promise(.failure(error))
+                        })
+                    case .failure(let encodingError):
+                        let generatedError = ResponseError(error: encodingError)
+                        promise(.failure(generatedError ?? ResponseError.unknownError()))
+                    }
                 }
             }
-        }
+        }.eraseToAnyPublisher()
     }
 
     private func configureHeaders(for request: APIRequest) -> Swift.Result<[String: String], ResponseError> {
@@ -231,7 +222,10 @@ open class APIClient: NSObject {
         do {
             headers = try request.headers()
         } catch {
-            return .failure(ResponseError(errorCode: .missedAccessToken))
+            if error is AuthRequestError {
+                return .failure(ResponseError(errorCode: .missedAccessToken))
+            }
+            return .failure(ResponseError(errorCode: .headersConfigurationError))
         }
         return .success(headers)
     }

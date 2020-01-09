@@ -17,6 +17,7 @@ public enum APIErrorCode: Int {
     case unknown = 1090
     case wrongResponseType
     case missedAccessToken
+    case headersConfigurationError
 
     var message: String {
         switch self {
