@@ -50,42 +50,6 @@ final class JSONDeserrializerTests: XCTestCase {
             .store(in: &subscriptions)
     }
 
-    func testErrorDeserialization() {
-        let responseErrorDeserializer = JSONDeserializer<ResponseError>.singleObjectDeserializer()
-
-        responseErrorDeserializer.deserialize(data: JSONDataResponses.errorJsonDataResponse)
-            .sink(receiveCompletion: { completion in
-                guard case let .failure(error) = completion  else {
-                    XCTAssertTrue(true)
-                    return
-                }
-                XCTAssertTrue(false, "Received unexpected error: \(error). Check init?(json: JSON).")
-            },
-                  receiveValue: { reponseError in
-                    XCTAssertTrue(reponseError.errorCode == .invalidResponse)
-                    XCTAssertEqual(reponseError.message, "Test error message.")
-            })
-            .store(in: &subscriptions)
-    }
-
-    func testErrorWithKeypathDeserialization() {
-        let responseErrorDeserializer = JSONDeserializer<ResponseError>.singleObjectDeserializer(keyPath: "error")
-
-        responseErrorDeserializer.deserialize(data: JSONDataResponses.errorKeyPathJsonDataResponse)
-            .sink(receiveCompletion: { completion in
-                guard case let .failure(error) = completion  else {
-                    XCTAssertTrue(true)
-                    return
-                }
-                XCTAssertTrue(false, "Received unexpected error: \(error). Check init?(json: JSON).")
-            },
-                  receiveValue: { reponseError in
-                    XCTAssertTrue(reponseError.errorCode == .invalidResponse)
-                    XCTAssertEqual(reponseError.message, "Test error message.")
-            })
-            .store(in: &subscriptions)
-    }
-
     override func tearDown() {
         subscriptions.removeAll()
         
@@ -95,8 +59,6 @@ final class JSONDeserrializerTests: XCTestCase {
     static var allTests = [
         ("testSingleObjectDeserialization", testSingleObjectDeserialization),
         ("testObjectsArrayDeserialization", testObjectsArrayDeserialization),
-        ("testJsonMappingError", testJsonMappingError),
-        ("testErrorDeserialization", testErrorDeserialization),
-        ("testErrorWithKeypathDeserialization", testErrorWithKeypathDeserialization)
+        ("testJsonMappingError", testJsonMappingError)
     ]
 }

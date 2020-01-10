@@ -2,6 +2,10 @@ import Foundation
 import Combine
 import Alamofire
 
+public enum APIClientError: Error {
+    case unreachableNetwork, responseStatusCodeIsNil, responseErrorStatus(Int)
+}
+
 open class APIClient: NSObject {
     private struct Constants {
         static let hostNameKey = "host"
@@ -54,9 +58,9 @@ open class APIClient: NSObject {
     public func executeRequest<T>(_ request: APIRequest,
                                   retries: Int = 0,
                                   deserializer: ResponseDeserializer<T>,
-                                  completion: @escaping (Swift.Result<T, ResponseError>) -> Void) {
+                                  completion: @escaping (Swift.Result<T, Error>) -> Void) {
         if reachabilityManager?.isReachable == false {
-            completion(.failure(ResponseError(errorCode: .noInternetConnection)))
+            completion(.failure(APIClientError.unreachableNetwork))
         }
 
         let responseSubject = PassthroughSubject<(data: Data?, response: HTTPURLResponse?), Error>()
@@ -68,7 +72,7 @@ open class APIClient: NSObject {
             .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { receivedCompletion in
                 if case let .failure(error) = receivedCompletion {
-                    completion(.failure(self.handle(error: error)))
+                    completion(.failure(error))
                 }
             }, receiveValue: { value in
                 completion(.success(value))
@@ -96,7 +100,7 @@ open class APIClient: NSObject {
 
     public func executeRequest<T: DeserializeableRequest, U>(request: T,
                                                              retries: Int = 0,
-                                                             completion: @escaping (Swift.Result<U, ResponseError>) -> Void) where U == T.ResponseType {
+                                                             completion: @escaping (Swift.Result<U, Error>) -> Void) where U == T.ResponseType {
         executeRequest(request,
                        retries: retries,
                        deserializer: request.deserializer,
@@ -111,42 +115,20 @@ open class APIClient: NSObject {
     private func handle(data: Data?,
                         response: HTTPURLResponse?,
                         errorKeypath: String?) -> Future <(Data, [String: Any]?), Error> {
-        var errorDeserializerSubscriptions = Set<AnyCancellable>()
         return Future { promise in
             let headers = response?.allHeaderFields as? [String: Any]
-            var generatedError: ResponseError = ResponseError.unknownError()
-            if let data = data, !data.isEmpty {
-                let errordeserializer = JSONDeserializer<ResponseError>.singleObjectDeserializer(keyPath: errorKeypath)
-                errordeserializer.deserialize(data: data, headers: headers)
-                    .sink(receiveCompletion: { errorCompletion in
-                        if case .failure = errorCompletion {
-                            promise(.success((data, headers)))
-                        }
-                    },
-                          receiveValue: { deserializedError in
-                            deserializedError.errorCode = APIErrorCode(code: response?.statusCode)
-                            promise(.failure(deserializedError))
-                    }).store(in: &errorDeserializerSubscriptions)
-            } else if let statusCode = response?.statusCode, (200..<300).contains(statusCode),
-                data?.isEmpty == true {
+            guard let statusCode = response?.statusCode else {
+                promise(.failure(APIClientError.responseStatusCodeIsNil))
+                return
+            }
+            if (200..<300).contains(statusCode) {
                 var success = true
-                let data = Data(bytes: &success, count: MemoryLayout.size(ofValue: success))
-                promise(.success((data, headers)))
-            } else if let response = response, let statusCodeError = ResponseError(errorCode: response.statusCode) {
-                generatedError = statusCodeError
-                promise(.failure(generatedError))
+                let responseData = data ?? Data(bytes: &success, count: MemoryLayout.size(ofValue: success))
+                promise(.success((responseData, headers)))
+            } else {
+                promise(.failure(APIClientError.responseErrorStatus(statusCode)))
             }
         }
-    }
-
-    private func handle(error: Error) -> ResponseError {
-        if let responseError = error as? ResponseError {
-            return responseError
-        }
-        if error is AuthRequestError {
-            return ResponseError(errorCode: .missedAccessToken)
-        }
-        return ResponseError(error: error) ?? ResponseError.unknownError()
     }
 
     private func request(_ request: APIRequest) -> AnyPublisher<DefaultDataResponse, Error> {
@@ -209,23 +191,19 @@ open class APIClient: NSObject {
                             promise(.failure(error))
                         })
                     case .failure(let encodingError):
-                        let generatedError = ResponseError(error: encodingError)
-                        promise(.failure(generatedError ?? ResponseError.unknownError()))
+                        promise(.failure(encodingError))
                     }
                 }
             }
         }.eraseToAnyPublisher()
     }
 
-    private func configureHeaders(for request: APIRequest) -> Swift.Result<[String: String], ResponseError> {
+    private func configureHeaders(for request: APIRequest) -> Swift.Result<[String: String], Error> {
         var headers = [String: String]()
         do {
             headers = try request.headers()
         } catch {
-            if error is AuthRequestError {
-                return .failure(ResponseError(errorCode: .missedAccessToken))
-            }
-            return .failure(ResponseError(errorCode: .headersConfigurationError))
+            return .failure(error)
         }
         return .success(headers)
     }

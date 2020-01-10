@@ -95,7 +95,7 @@ final class ApiClientTests: XCTestCase {
 
         apiClient.executeRequest(request: brokenAuthRequest) { result in
             if case let .failure(error) = result {
-                XCTAssertTrue(error.errorCode == .missedAccessToken)
+                XCTAssertEqual(error as? AuthRequestError, AuthRequestError.accessTokenIsNil)
             } else {
                 XCTAssertTrue(false, "Unexpected success response.")
             }
