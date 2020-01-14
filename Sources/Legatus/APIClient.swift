@@ -2,8 +2,8 @@ import Foundation
 import Combine
 import Alamofire
 
-public enum APIClientError: Error {
-    case unreachableNetwork, responseStatusCodeIsNil, responseErrorStatus(Int)
+public enum APIClientError: Error, Equatable {
+    case unreachableNetwork, responseStatusCodeIsNil, responseErrorStatus(Int), requestCancelled
 }
 
 open class APIClient: NSObject {
@@ -16,10 +16,10 @@ open class APIClient: NSObject {
         return reachabilityManager?.isReachable ?? false
     }
 
-    private(set) var multipartRequestProgress: Double = 0
+    let baseURL: URL
+    private(set) var manager: SessionManager
 
-    private let baseURL: URL
-    private var manager: SessionManager
+    private(set) var multipartRequestProgress: Double = 0
     private var reachabilityManager: NetworkReachabilityManager?
 
     private let deserializationQueue = DispatchQueue(label: "DeserializationQueue",
@@ -55,15 +55,18 @@ open class APIClient: NSObject {
         reachabilityManager?.stopListening()
     }
 
-    public func executeRequest<T>(_ request: APIRequest,
-                                  retries: Int = 0,
-                                  deserializer: ResponseDeserializer<T>,
-                                  completion: @escaping (Swift.Result<T, Error>) -> Void) {
+    @discardableResult public func executeRequest<T>(_ request: APIRequest,
+                                                     retries: Int = 0,
+                                                     deserializer: ResponseDeserializer<T>,
+                                                     completion: @escaping (Swift.Result<T, Error>) -> Void) -> AnyCancellable {
         if reachabilityManager?.isReachable == false {
             completion(.failure(APIClientError.unreachableNetwork))
         }
 
         let responseSubject = PassthroughSubject<(data: Data?, response: HTTPURLResponse?), Error>()
+        var isRequestFinished = false
+
+        var cancellableToken: AnyCancellable!
 
         responseSubject
             .flatMap { self.handle(data: $0.data, response: $0.response, errorKeypath: request.errorKeyPath) }
@@ -88,28 +91,44 @@ open class APIClient: NSObject {
                         responseSubject.send((dataResponse.data, dataResponse.response))
                 }).store(in: &requestSubscriptions)
         } else {
-            self.request(request)
+            cancellableToken = self.request(request)
                 .retry(retries)
+                .handleEvents(receiveSubscription: { _ in
+                    isRequestFinished = false
+                }, receiveCancel: {
+                    if isRequestFinished == false {
+                        responseSubject.send(completion: .failure(APIClientError.requestCancelled))
+                        isRequestFinished = true
+                    }
+                })
                 .sink(receiveCompletion: { receivedCompletion in
+                    isRequestFinished = true
                     responseSubject.send(completion: receivedCompletion)
                 }, receiveValue: { defaultDataResponse in
+                    isRequestFinished = true
                     responseSubject.send((defaultDataResponse.data, defaultDataResponse.response))
-                }).store(in: &requestSubscriptions)
+                })
+            cancellableToken.store(in: &requestSubscriptions)
         }
+
+        return cancellableToken
     }
 
-    public func executeRequest<T: DeserializeableRequest, U>(request: T,
-                                                             retries: Int = 0,
-                                                             completion: @escaping (Swift.Result<U, Error>) -> Void) where U == T.ResponseType {
-        executeRequest(request,
-                       retries: retries,
-                       deserializer: request.deserializer,
-                       completion: completion)
+    @discardableResult public func executeRequest<T: DeserializeableRequest, U>(request: T,
+                                                                                retries: Int = 0,
+                                                                                completion: @escaping (Swift.Result<U, Error>) -> Void) -> AnyCancellable where U == T.ResponseType {
+        return executeRequest(request,
+                              retries: retries,
+                              deserializer: request.deserializer,
+                              completion: completion)
     }
 
     public func cancelAllRequests() {
-        manager.session.invalidateAndCancel()
-        manager = SessionManager()
+        manager.session.getTasksWithCompletionHandler { dataTasks, uploadTasks, downloadTasks in
+            dataTasks.forEach { $0.cancel() }
+            uploadTasks.forEach { $0.cancel() }
+            downloadTasks.forEach { $0.cancel() }
+        }
     }
 
     private func handle(data: Data?,
@@ -132,28 +151,8 @@ open class APIClient: NSObject {
     }
 
     private func request(_ request: APIRequest) -> AnyPublisher<DefaultDataResponse, Error> {
-        return Deferred {
-            return Future<DefaultDataResponse, Error> { [weak self] promise in
-                guard let self = self else { return }
-                var headers = [String: String]()
-                switch self.configureHeaders(for: request) {
-                case .success(let configuredHeaders):
-                    headers = configuredHeaders
-                case .failure(let responseError):
-                    promise(.failure(responseError))
-                }
-                _ = self.manager.request(self.configurePath(for: request),
-                                         method: request.method,
-                                         parameters: request.parameters,
-                                         encoding: request.encoding,
-                                         headers: headers).response { dataResponse in
-                                            guard let error = dataResponse.error else {
-                                                promise(.success(dataResponse))
-                                                return
-                                            }
-                                            promise(.failure(error))
-                }
-            }
+        return Deferred<DataRequestPublisher> {
+            return DataRequestPublisher(apiClient: self, apiRequest: request)
         }.eraseToAnyPublisher()
     }
 
@@ -164,7 +163,7 @@ open class APIClient: NSObject {
                 guard let self = self else { return }
                 self.multipartRequestProgress = 0
                 var headers = [String: String]()
-                switch self.configureHeaders(for: request) {
+                switch request.configureHeaders() {
                 case .success(let configuredHeaders):
                     headers = configuredHeaders
                 case .failure(let responseError):
@@ -175,7 +174,7 @@ open class APIClient: NSObject {
                         multipartFormData.append(requestMultipartData.value,
                                                  withName: requestMultipartData.key)
                     }
-                }, to: self.configurePath(for: request),
+                }, to: request.configurePath(baseUrl: self.baseURL),
                    method: request.method,
                    headers: headers) { result in
                     switch result {
@@ -196,24 +195,5 @@ open class APIClient: NSObject {
                 }
             }
         }.eraseToAnyPublisher()
-    }
-
-    private func configureHeaders(for request: APIRequest) -> Swift.Result<[String: String], Error> {
-        var headers = [String: String]()
-        do {
-            headers = try request.headers()
-        } catch {
-            return .failure(error)
-        }
-        return .success(headers)
-    }
-
-    private func configurePath(for request: APIRequest) -> String {
-        var requestPath = baseURL.appendingPathComponent(request.path).absoluteString
-        if let fullPath = request.fullPath, !fullPath.isEmpty {
-            requestPath = fullPath
-        }
-
-        return requestPath
     }
 }

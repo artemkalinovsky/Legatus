@@ -105,11 +105,33 @@ final class ApiClientTests: XCTestCase {
         wait(for: [apiRequestExpectation], timeout: 5.0)
     }
 
+    func testRequestCancelation() {
+        let apiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
+        let randomUserApiRequest = RandomUserApiRequest()
+        let apiRequestExpectation = XCTestExpectation(description: "Execute api request.")
+
+        let cancelationToken = apiClient.executeRequest(request: randomUserApiRequest) { result in
+            if case let .failure(error) = result, let apiClientError = error as? APIClientError {
+                XCTAssertTrue(apiClientError == APIClientError.requestCancelled)
+            } else {
+                XCTAssertTrue(false, "Unexpected success response.")
+            }
+            apiRequestExpectation.fulfill()
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
+            cancelationToken.cancel()
+        }
+
+        wait(for: [apiRequestExpectation], timeout: 10.0)
+    }
+
     static var allTests = [
         ("testNotEmptyResponse", testNotEmptyResponse),
         ("testParallelRequests", testParallelRequests),
         ("testErrorResponse", testErrorResponse),
         ("testAuthRequest", testAuthRequest),
-        ("testMissedAccessToken", testMissedAccessToken)
+        ("testMissedAccessToken", testMissedAccessToken),
+        ("testRequestCancelation", testRequestCancelation)
     ]
 }

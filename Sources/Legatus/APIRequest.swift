@@ -81,5 +81,23 @@ public extension APIRequest {
     var errorKeyPath: String? {
         return nil
     }
+
+    func configureHeaders() -> Swift.Result<[String: String], Error> {
+        var headers = [String: String]()
+        do {
+            headers = try self.headers()
+        } catch {
+            return .failure(error)
+        }
+        return .success(headers)
+    }
+
+    func configurePath(baseUrl: URL) -> String {
+        var requestPath = baseUrl.appendingPathComponent(self.path).absoluteString
+        if let fullPath = self.fullPath, !fullPath.isEmpty {
+            requestPath = fullPath
+        }
+        return requestPath
+    }
 }
 

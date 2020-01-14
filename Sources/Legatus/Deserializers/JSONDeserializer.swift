@@ -64,13 +64,13 @@ public extension JSONDeserializer where T: JSONDeserializable {
                 return []
             }
 
-            let deserializedObjects = jsonArrayValue.compactMap { T(json: $0) }
+            let deserializedObjects = jsonArrayValue.map { T(json: $0) }
 
-            if deserializedObjects.isEmpty {
+            if deserializedObjects.contains(where: { $0 == nil }) {
                 throw JSONDeserializerError.jsonDeserializableInitFailed("Failed to create array of \(T.self) objects.")
             }
 
-            return deserializedObjects
+            return deserializedObjects.compactMap { $0 }
         })
     }
 }
