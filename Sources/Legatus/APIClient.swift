@@ -58,6 +58,7 @@ open class APIClient: NSObject {
     @discardableResult public func executeRequest<T>(_ request: APIRequest,
                                                      retries: Int = 0,
                                                      deserializer: ResponseDeserializer<T>,
+                                                     uploadProgressObserver: ((Progress) -> Void)? = nil,
                                                      completion: @escaping (Swift.Result<T, Error>) -> Void) -> AnyCancellable {
         if reachabilityManager?.isReachable == false {
             completion(.failure(APIClientError.unreachableNetwork))
@@ -82,14 +83,17 @@ open class APIClient: NSObject {
             }).store(in: &requestSubscriptions)
 
         if let requestInputMultipartData = request.multipartFormData {
-            self.multipartRequest(request, requestInputMultipartData: requestInputMultipartData)
+            cancellableToken = self.multipartRequest(request,
+                                                     requestInputMultipartData: requestInputMultipartData,
+                                                     uploadProgressObserver: uploadProgressObserver)
                 .retry(retries)
                 .sink(receiveCompletion: { receivedCompletion in
                     responseSubject.send(completion: receivedCompletion)
                 },
                       receiveValue: { dataResponse in
                         responseSubject.send((dataResponse.data, dataResponse.response))
-                }).store(in: &requestSubscriptions)
+                })
+            cancellableToken.store(in: &requestSubscriptions)
         } else {
             cancellableToken = self.request(request)
                 .retry(retries)
@@ -116,10 +120,12 @@ open class APIClient: NSObject {
 
     @discardableResult public func executeRequest<T: DeserializeableRequest, U>(request: T,
                                                                                 retries: Int = 0,
+                                                                                uploadProgressObserver: ((Progress) -> Void)? = nil,
                                                                                 completion: @escaping (Swift.Result<U, Error>) -> Void) -> AnyCancellable where U == T.ResponseType {
         return executeRequest(request,
                               retries: retries,
                               deserializer: request.deserializer,
+                              uploadProgressObserver: uploadProgressObserver,
                               completion: completion)
     }
 
@@ -157,43 +163,12 @@ open class APIClient: NSObject {
     }
 
     private func multipartRequest(_ request: APIRequest,
-                                  requestInputMultipartData: [String: URL]) -> AnyPublisher<DataResponse<Data>, Error> {
+                                  requestInputMultipartData: [String: URL],
+                                  uploadProgressObserver: ((Progress) -> Void)? = nil) -> AnyPublisher<DataResponse<Data>, Error> {
         return Deferred {
-            return Future<DataResponse<Data>, Error> { [weak self] promise in
-                guard let self = self else { return }
-                self.multipartRequestProgress = 0
-                var headers = [String: String]()
-                switch request.configureHeaders() {
-                case .success(let configuredHeaders):
-                    headers = configuredHeaders
-                case .failure(let responseError):
-                    promise(.failure(responseError))
-                }
-                self.manager.upload(multipartFormData: { multipartFormData in
-                    for requestMultipartData in requestInputMultipartData {
-                        multipartFormData.append(requestMultipartData.value,
-                                                 withName: requestMultipartData.key)
-                    }
-                }, to: request.configurePath(baseUrl: self.baseURL),
-                   method: request.method,
-                   headers: headers) { result in
-                    switch result {
-                    case .success(let upload, _, _):
-                        upload.uploadProgress(closure: { [weak self] progress in
-                            self?.multipartRequestProgress = progress.fractionCompleted
-                        })
-                        upload.responseData(completionHandler: { dataResponse in
-                            guard let error = dataResponse.error else {
-                                promise(.success(dataResponse))
-                                return
-                            }
-                            promise(.failure(error))
-                        })
-                    case .failure(let encodingError):
-                        promise(.failure(encodingError))
-                    }
-                }
-            }
+            return MultipartRequestPublisher(apiClient: self,
+                                             apiRequest: request,
+                                             uploadProgressObserver: uploadProgressObserver)
         }.eraseToAnyPublisher()
     }
 }
