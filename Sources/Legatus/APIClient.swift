@@ -69,7 +69,7 @@ open class APIClient: NSObject {
         let responseSubject = PassthroughSubject<(data: Data?, response: HTTPURLResponse?), Error>()
 
         responseSubject
-            .flatMap { self.handle(data: $0.data, response: $0.response, errorKeypath: request.errorKeyPath) }
+            .flatMap { self.handle(data: $0.data, response: $0.response) }
             .subscribe(on: deserializationQueue)
             .flatMap { deserializer.deserialize(data: $0, headers: $1) }
             .receive(on: DispatchQueue.main)
@@ -132,9 +132,7 @@ open class APIClient: NSObject {
         }
     }
 
-    private func handle(data: Data?,
-                        response: HTTPURLResponse?,
-                        errorKeypath: String?) -> Future <(Data, [String: Any]?), Error> {
+    private func handle(data: Data?, response: HTTPURLResponse?) -> Future <(Data, [String: Any]?), Error> {
         return Future { promise in
             let headers = response?.allHeaderFields as? [String: Any]
             guard let statusCode = response?.statusCode else {

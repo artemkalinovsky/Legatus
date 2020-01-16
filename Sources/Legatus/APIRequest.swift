@@ -10,7 +10,6 @@ public protocol APIRequest {
     var method: Method { get }
     var encoding: ParameterEncoding { get }
     var multipartFormData: [String: URL]? { get }
-    var errorKeyPath: String? { get }
     func headers() throws -> [String: String]
 }
 
@@ -75,10 +74,6 @@ public extension APIRequest {
     }
 
     var multipartFormData: [String: URL]? {
-        return nil
-    }
-
-    var errorKeyPath: String? {
         return nil
     }
 
