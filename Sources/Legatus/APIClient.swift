@@ -59,15 +59,14 @@ open class APIClient: NSObject {
                                                      retries: Int = 0,
                                                      deserializer: ResponseDeserializer<T>,
                                                      uploadProgressObserver: ((Progress) -> Void)? = nil,
-                                                     completion: @escaping (Swift.Result<T, Error>) -> Void) -> AnyCancellable {
+                                                     completion: @escaping (Swift.Result<T, Error>) -> Void) -> AnyCancellable? {
+        var cancellableToken: AnyCancellable?
+
         if reachabilityManager?.isReachable == false {
             completion(.failure(APIClientError.unreachableNetwork))
         }
 
         let responseSubject = PassthroughSubject<(data: Data?, response: HTTPURLResponse?), Error>()
-        var isRequestFinished = false
-
-        var cancellableToken: AnyCancellable!
 
         responseSubject
             .flatMap { self.handle(data: $0.data, response: $0.response, errorKeypath: request.errorKeyPath) }
@@ -83,36 +82,32 @@ open class APIClient: NSObject {
             }).store(in: &requestSubscriptions)
 
         if let requestInputMultipartData = request.multipartFormData {
-            cancellableToken = self.multipartRequest(request,
-                                                     requestInputMultipartData: requestInputMultipartData,
-                                                     uploadProgressObserver: uploadProgressObserver)
+            cancellableToken = multipartRequestResponsePublisher(request,
+                                                                 requestInputMultipartData: requestInputMultipartData,
+                                                                 uploadProgressObserver: uploadProgressObserver)
                 .retry(retries)
+                .handleEvents(receiveCancel: {
+                    responseSubject.send(completion: .failure(APIClientError.requestCancelled))
+                })
                 .sink(receiveCompletion: { receivedCompletion in
                     responseSubject.send(completion: receivedCompletion)
                 },
                       receiveValue: { dataResponse in
                         responseSubject.send((dataResponse.data, dataResponse.response))
                 })
-            cancellableToken.store(in: &requestSubscriptions)
+            cancellableToken?.store(in: &requestSubscriptions)
         } else {
-            cancellableToken = self.request(request)
+            cancellableToken = requestResponsePublisher(request)
                 .retry(retries)
-                .handleEvents(receiveSubscription: { _ in
-                    isRequestFinished = false
-                }, receiveCancel: {
-                    if isRequestFinished == false {
-                        responseSubject.send(completion: .failure(APIClientError.requestCancelled))
-                        isRequestFinished = true
-                    }
+                .handleEvents(receiveCancel: {
+                    responseSubject.send(completion: .failure(APIClientError.requestCancelled))
                 })
                 .sink(receiveCompletion: { receivedCompletion in
-                    isRequestFinished = true
                     responseSubject.send(completion: receivedCompletion)
                 }, receiveValue: { defaultDataResponse in
-                    isRequestFinished = true
                     responseSubject.send((defaultDataResponse.data, defaultDataResponse.response))
                 })
-            cancellableToken.store(in: &requestSubscriptions)
+            cancellableToken?.store(in: &requestSubscriptions)
         }
 
         return cancellableToken
@@ -121,7 +116,7 @@ open class APIClient: NSObject {
     @discardableResult public func executeRequest<T: DeserializeableRequest, U>(request: T,
                                                                                 retries: Int = 0,
                                                                                 uploadProgressObserver: ((Progress) -> Void)? = nil,
-                                                                                completion: @escaping (Swift.Result<U, Error>) -> Void) -> AnyCancellable where U == T.ResponseType {
+                                                                                completion: @escaping (Swift.Result<U, Error>) -> Void) -> AnyCancellable? where U == T.ResponseType {
         return executeRequest(request,
                               retries: retries,
                               deserializer: request.deserializer,
@@ -146,26 +141,26 @@ open class APIClient: NSObject {
                 promise(.failure(APIClientError.responseStatusCodeIsNil))
                 return
             }
-            if (200..<300).contains(statusCode) {
-                var success = true
-                let responseData = data ?? Data(bytes: &success, count: MemoryLayout.size(ofValue: success))
-                promise(.success((responseData, headers)))
-            } else {
+            guard (200..<300).contains(statusCode) else {
                 promise(.failure(APIClientError.responseErrorStatus(statusCode)))
+                return
             }
+            var success = true
+            let responseData = data ?? Data(bytes: &success, count: MemoryLayout.size(ofValue: success))
+            promise(.success((responseData, headers)))
         }
     }
 
-    private func request(_ request: APIRequest) -> AnyPublisher<DefaultDataResponse, Error> {
-        return Deferred<DataRequestPublisher> {
+    private func requestResponsePublisher(_ request: APIRequest) -> AnyPublisher<DefaultDataResponse, Error> {
+        return Deferred<DataRequestPublisher> { [weak self] in
             return DataRequestPublisher(apiClient: self, apiRequest: request)
         }.eraseToAnyPublisher()
     }
 
-    private func multipartRequest(_ request: APIRequest,
-                                  requestInputMultipartData: [String: URL],
-                                  uploadProgressObserver: ((Progress) -> Void)? = nil) -> AnyPublisher<DataResponse<Data>, Error> {
-        return Deferred {
+    private func multipartRequestResponsePublisher(_ request: APIRequest,
+                                                   requestInputMultipartData: [String: URL],
+                                                   uploadProgressObserver: ((Progress) -> Void)? = nil) -> AnyPublisher<DataResponse<Data>, Error> {
+        return Deferred { [weak self] in
             return MultipartRequestPublisher(apiClient: self,
                                              apiRequest: request,
                                              uploadProgressObserver: uploadProgressObserver)

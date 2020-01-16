@@ -6,15 +6,16 @@ public struct DataRequestPublisher: Publisher {
     public typealias Output = DefaultDataResponse
     public typealias Failure = Error
 
-    private let apiClient: APIClient
+    private let apiClient: APIClient?
     private let apiRequest: APIRequest
 
-    init(apiClient: APIClient, apiRequest: APIRequest) {
+    init(apiClient: APIClient?, apiRequest: APIRequest) {
         self.apiClient = apiClient
         self.apiRequest = apiRequest
     }
 
     public func receive<S: Subscriber>(subscriber: S) where Failure == S.Failure, Output == S.Input {
+        guard let apiClient = apiClient else { return }
         let dataRequestSubscription = DataRequestSubscription(subscriber: subscriber,
                                                               apiClient: apiClient,
                                                               apiRequest: apiRequest)
