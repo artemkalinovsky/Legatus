@@ -3,16 +3,21 @@ import Combine
 import Alamofire
 
 public struct MultipartRequestPublisher: Publisher {
-    public typealias Output = DataResponse<Data>
+    public typealias Output = APIResponse
     public typealias Failure = Error
 
     private let apiClient: APIClient?
     private let apiRequest: APIRequest
+    private let requestInputMultipartData: [String: URL]
     private var uploadProgressObserver: ((Progress) -> Void)? = nil
 
-    init(apiClient: APIClient?, apiRequest: APIRequest, uploadProgressObserver: ((Progress) -> Void)? = nil) {
+    init(apiClient: APIClient?,
+         apiRequest: APIRequest,
+         requestInputMultipartData: [String: URL],
+         uploadProgressObserver: ((Progress) -> Void)? = nil) {
         self.apiClient = apiClient
         self.apiRequest = apiRequest
+        self.requestInputMultipartData = requestInputMultipartData
         self.uploadProgressObserver = uploadProgressObserver
     }
 
@@ -21,6 +26,7 @@ public struct MultipartRequestPublisher: Publisher {
         let multipartRequestSubsription = MultipartRequestSubscription(subscriber: subscriber,
                                                                        apiClient: apiClient,
                                                                        apiRequest: apiRequest,
+                                                                       requestInputMultipartData: requestInputMultipartData,
                                                                        uploadProgressObserver: uploadProgressObserver)
 
         subscriber.receive(subscription: multipartRequestSubsription)

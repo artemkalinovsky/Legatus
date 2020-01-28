@@ -3,7 +3,7 @@ import Combine
 import Alamofire
 
 public struct DataRequestPublisher: Publisher {
-    public typealias Output = DefaultDataResponse
+    public typealias Output = APIResponse
     public typealias Failure = Error
 
     private let apiClient: APIClient?

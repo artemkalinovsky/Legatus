@@ -2,9 +2,10 @@ import Foundation
 import Combine
 import Alamofire
 
-public final class MultipartRequestSubscription<S: Subscriber>: Subscription where S.Input == DataResponse<Data>, S.Failure == Error {
+public final class MultipartRequestSubscription<S: Subscriber>: Subscription where S.Input == APIResponse, S.Failure == Error {
     private let apiClient: APIClient
     private let apiRequest: APIRequest
+    private let requestInputMultipartData: [String: URL]
     private var uploadRequest: UploadRequest?
     private var uploadProgressObserver: ((Progress) -> Void)? = nil
     private var isRequestInProgress = false
@@ -13,10 +14,12 @@ public final class MultipartRequestSubscription<S: Subscriber>: Subscription whe
     init(subscriber: S,
          apiClient: APIClient,
          apiRequest: APIRequest,
+         requestInputMultipartData: [String: URL],
          uploadProgressObserver: ((Progress) -> Void)? = nil) {
         self.subscriber = subscriber
         self.apiClient = apiClient
         self.apiRequest = apiRequest
+        self.requestInputMultipartData = requestInputMultipartData
         self.uploadProgressObserver = uploadProgressObserver
     }
 
@@ -28,13 +31,9 @@ public final class MultipartRequestSubscription<S: Subscriber>: Subscription whe
         case .failure(let responseError):
             subscriber?.receive(completion: .failure(responseError))
         }
-        let requestInputMultipartData = apiRequest.multipartFormData ?? [String: URL]()
         isRequestInProgress = true
-        apiClient.manager.upload(multipartFormData: { multipartFormData in
-            for requestMultipartData in requestInputMultipartData {
-                multipartFormData.append(requestMultipartData.value,
-                                         withName: requestMultipartData.key)
-            }
+        apiClient.manager.upload(multipartFormData: { [weak self] multipartFormData in
+            self?.requestInputMultipartData.forEach { multipartFormData.append($0.value, withName: $0.key) }
         }, to: apiRequest.configurePath(baseUrl: apiClient.baseURL),
            method: apiRequest.method,
            headers: headers) { [weak self] result in
