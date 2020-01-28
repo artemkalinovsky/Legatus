@@ -34,7 +34,7 @@ open class APIClient: NSObject {
         }()
         self.baseURL = baseURL
         manager = SessionManager(configuration: configuration)
-        
+
         super.init()
 
         if let host = baseURL.host {
@@ -110,7 +110,7 @@ open class APIClient: NSObject {
         }
     }
 
-    private func handle(apiResponse: APIResponse) -> Future <(Data, [String: Any]?), Error> {
+    private func handle(apiResponse: APIResponse) -> AnyPublisher<(Data, [String: Any]?), Error> {
         return Future { promise in
             let headers = apiResponse.httpUrlResponse?.allHeaderFields as? [String: Any]
             guard let statusCode = apiResponse.httpUrlResponse?.statusCode else {
@@ -125,7 +125,7 @@ open class APIClient: NSObject {
             let responseData = apiResponse.responseData ?? Data(bytes: &success,
                                                                 count: MemoryLayout.size(ofValue: success))
             promise(.success((responseData, headers)))
-        }
+        }.eraseToAnyPublisher()
     }
 
     private func requestResponsePublisher(_ request: APIRequest) -> AnyPublisher<APIResponse, Error> {

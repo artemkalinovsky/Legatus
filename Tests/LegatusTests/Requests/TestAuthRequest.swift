@@ -3,7 +3,7 @@ import Foundation
 
 final class TestAuthRequest: AuthRequest, DeserializeableRequest {
 
-    var accessToken: String? = nil
+    var accessToken: String?
 
     var deserializer: ResponseDeserializer<Void> {
         return EmptyDeserializer()

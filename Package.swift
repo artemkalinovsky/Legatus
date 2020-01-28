@@ -12,7 +12,7 @@ let package = Package(
     products: [
         .library(
             name: "Legatus",
-            targets: ["Legatus"]),
+            targets: ["Legatus"])
     ],
     dependencies: [
         .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "4.9.1")),
@@ -24,7 +24,7 @@ let package = Package(
             dependencies: ["Alamofire", "JASON"]),
         .testTarget(
             name: "LegatusTests",
-            dependencies: ["Legatus"]),
+            dependencies: ["Legatus"])
     ],
     swiftLanguageVersions: [.v5]
 )

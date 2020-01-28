@@ -3,54 +3,67 @@ import XCTest
 
 final class ApiClientTests: XCTestCase {
 
-    func testNotEmptyResponse() {
-        let randomUserApiClient = APIClient(baseURL: URL(string: "https://randomuser.me/api/")!)
-        let randomUserApiRequest = RandomUserApiRequest()
-        let randomUserApiExpectation = XCTestExpectation(description: "Execute randomuser api request.")
+    func testValidGetRequest() {
+        let httpBinApiClient = APIClient(baseURL: URL(string: "https://httpbin.org/")!)
+        let httpBinGetRequest = HttpBinGetRequest()
+        let httpBinGetRequestExpectation = XCTestExpectation(description: "Execute api request.")
 
-        randomUserApiClient.executeRequest(request: randomUserApiRequest) { result in
-            if case let .success(fetchedUsers) = result {
-                XCTAssertFalse(fetchedUsers.isEmpty)
-                XCTAssertTrue(fetchedUsers.count == 1)
-                XCTAssertNotNil(fetchedUsers.first?.firstName)
-                XCTAssertNotNil(fetchedUsers.first?.lastName)
-                XCTAssertNotNil(fetchedUsers.first?.email)
+        httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
+            if case let .success(httpBinGetResponse) = result {
+                XCTAssertEqual(httpBinGetResponse.urlString, "https://httpbin.org/get")
+            } else if case let .failure(error) = result{
+                XCTAssertTrue(false, "Unexpected response. Error: \(error)")
             }
-            randomUserApiExpectation.fulfill()
+            httpBinGetRequestExpectation.fulfill()
         }
 
-        wait(for: [randomUserApiExpectation], timeout: 10.0)
+        wait(for: [httpBinGetRequestExpectation], timeout: 10.0)
     }
 
     func testParallelRequests() {
-        let randomUserApiClient = APIClient(baseURL: URL(string: "https://randomuser.me/api/")!)
-        let randomUserApiRequest = RandomUserApiRequest()
-        let firstRequestExpectation = XCTestExpectation(description: "Execute first randomuser api request.")
-        let secondRequestExpectation = XCTestExpectation(description: "Execute second randomuser api request.")
+        let httpBinApiClient = APIClient(baseURL: URL(string: "https://httpbin.org/")!)
+        let httpBinGetRequest = HttpBinGetRequest()
+        let firstRequestExpectation = XCTestExpectation(description: "Execute first api request.")
+        let secondRequestExpectation = XCTestExpectation(description: "Execute second api request.")
 
-        randomUserApiClient.executeRequest(request: randomUserApiRequest) { result in
-            if case let .success(fetchedUsers) = result {
-                XCTAssertFalse(fetchedUsers.isEmpty)
-                XCTAssertTrue(fetchedUsers.count == 1)
-                XCTAssertNotNil(fetchedUsers.first?.firstName)
-                XCTAssertNotNil(fetchedUsers.first?.lastName)
-                XCTAssertNotNil(fetchedUsers.first?.email)
+        httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
+            if case let .success(httpBinGetResponse) = result {
+                XCTAssertEqual(httpBinGetResponse.urlString, "https://httpbin.org/get")
+            } else if case let .failure(error) = result{
+                XCTAssertTrue(false, "Unexpected response. Error: \(error)")
             }
             firstRequestExpectation.fulfill()
         }
 
-        randomUserApiClient.executeRequest(request: randomUserApiRequest) { result in
-            if case let .success(fetchedUsers) = result {
-                XCTAssertFalse(fetchedUsers.isEmpty)
-                XCTAssertTrue(fetchedUsers.count == 1)
-                XCTAssertNotNil(fetchedUsers.first?.firstName)
-                XCTAssertNotNil(fetchedUsers.first?.lastName)
-                XCTAssertNotNil(fetchedUsers.first?.email)
+        httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
+            if case let .success(httpBinGetResponse) = result {
+                XCTAssertEqual(httpBinGetResponse.urlString, "https://httpbin.org/get")
+            } else if case let .failure(error) = result{
+                XCTAssertTrue(false, "Unexpected response. Error: \(error)")
             }
             secondRequestExpectation.fulfill()
         }
 
         wait(for: [firstRequestExpectation, secondRequestExpectation], timeout: 10.0)
+    }
+
+    func testRandomUserArrayResponse() {
+        let expectedResultsCount = 100
+        let randomUserApiClient = APIClient(baseURL: URL(string: "https://randomuser.me/api/")!)
+        let randomUserApiRequest = RandomUserApiRequest(results: expectedResultsCount)
+        let randomUserApiRequestExpectation = XCTestExpectation(description: "Execute randomuser api request.")
+
+        randomUserApiClient.executeRequest(request: randomUserApiRequest) { result in
+            if case let .success(fetchedUsers) = result {
+                XCTAssertFalse(fetchedUsers.isEmpty)
+                XCTAssertTrue(fetchedUsers.count == expectedResultsCount)
+            } else {
+                 XCTAssertTrue(false, "Unexpected response.")
+            }
+            randomUserApiRequestExpectation.fulfill()
+        }
+
+         wait(for: [randomUserApiRequestExpectation], timeout: 10.0)
     }
 
     func testErrorResponse() {
@@ -106,11 +119,11 @@ final class ApiClientTests: XCTestCase {
     }
 
     func testRequestCancelation() {
-        let apiClient = APIClient(baseURL: URL(string: "https://randomuser.me/api/")!)
-        let randomUserApiRequest = RandomUserApiRequest()
-        let apiRequestExpectation = XCTestExpectation(description: "Execute api request.")
+        let httpBinApiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
+        let httpBinGetRequest = HttpBinGetRequest()
+        let httpBinGetRequestExpectation = XCTestExpectation(description: "Execute api request.")
 
-        let cancelationToken = apiClient.executeRequest(request: randomUserApiRequest) { result in
+        let cancelationToken = httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
             if case let .failure(error) = result, let apiClientError = error as? APIClientError {
                 XCTAssertTrue(apiClientError == APIClientError.requestCancelled)
             } else if case .success(_) = result {
@@ -118,22 +131,83 @@ final class ApiClientTests: XCTestCase {
             } else {
                 XCTAssertTrue(false, "Unexpected success response.")
             }
-            apiRequestExpectation.fulfill()
+            httpBinGetRequestExpectation.fulfill()
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(100)) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
             cancelationToken?.cancel()
         }
 
-        wait(for: [apiRequestExpectation], timeout: 10.0)
+        wait(for: [httpBinGetRequestExpectation], timeout: 10.0)
+    }
+
+    func testRequestPublisherCancelation() {
+        let httpBinApiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
+        let httpBinGetRequest = HttpBinGetRequest()
+        let httpBinGetRequestExpectation = XCTestExpectation(description: "Execute api request.")
+
+        let cancelationToken = httpBinApiClient
+            .requestPublisher(request: httpBinGetRequest)
+            .handleEvents(receiveCancel: {
+                XCTAssertTrue(true)
+                httpBinGetRequestExpectation.fulfill()
+            })
+            .sink(receiveCompletion: { _ in
+            },
+                  receiveValue: { _ in
+            })
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
+            cancelationToken.cancel()
+        }
+
+        wait(for: [httpBinGetRequestExpectation], timeout: 10.0)
+    }
+
+    func testCancelAllRequests() {
+        let httpBinApiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
+        let httpBinGetRequest = HttpBinGetRequest()
+        let httpBinGetRequestExpectation1 = XCTestExpectation(description: "Execute api request 1.")
+        let httpBinGetRequestExpectation2 = XCTestExpectation(description: "Execute randomuser api request 2.")
+
+        httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
+            if case let .failure(error) = result, let apiClientError = error as? APIClientError {
+                XCTAssertTrue(apiClientError == APIClientError.requestCancelled)
+            } else if case .success(_) = result {
+                XCTAssertTrue(true)
+            } else {
+                XCTAssertTrue(false, "Unexpected success response.")
+            }
+            httpBinGetRequestExpectation1.fulfill()
+        }
+
+        httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
+            if case let .failure(error) = result, let apiClientError = error as? APIClientError {
+                XCTAssertTrue(apiClientError == APIClientError.requestCancelled)
+            } else if case .success(_) = result {
+                XCTAssertTrue(true)
+            } else {
+                XCTAssertTrue(false, "Unexpected success response.")
+            }
+            httpBinGetRequestExpectation2.fulfill()
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
+            httpBinApiClient.cancelAllRequests()
+        }
+
+        wait(for: [httpBinGetRequestExpectation1, httpBinGetRequestExpectation2], timeout: 10.0)
     }
 
     static var allTests = [
-        ("testNotEmptyResponse", testNotEmptyResponse),
+        ("testValidGetRequest", testValidGetRequest),
         ("testParallelRequests", testParallelRequests),
+        ("testRandomUserArrayResponse", testRandomUserArrayResponse),
         ("testErrorResponse", testErrorResponse),
         ("testAuthRequest", testAuthRequest),
         ("testMissedAccessToken", testMissedAccessToken),
-        ("testRequestCancelation", testRequestCancelation)
+        ("testRequestCancelation", testRequestCancelation),
+        ("testRequestPublisherCancelation", testRequestPublisherCancelation),
+        ("testCancelAllRequests", testCancelAllRequests)
     ]
 }

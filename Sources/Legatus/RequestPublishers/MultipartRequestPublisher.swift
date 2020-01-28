@@ -9,7 +9,7 @@ public struct MultipartRequestPublisher: Publisher {
     private let apiClient: APIClient?
     private let apiRequest: APIRequest
     private let requestInputMultipartData: [String: URL]
-    private var uploadProgressObserver: ((Progress) -> Void)? = nil
+    private var uploadProgressObserver: ((Progress) -> Void)?
 
     init(apiClient: APIClient?,
          apiRequest: APIRequest,

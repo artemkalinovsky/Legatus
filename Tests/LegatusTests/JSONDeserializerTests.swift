@@ -13,7 +13,7 @@ final class JSONDeserrializerTests: XCTestCase {
             .sink(receiveCompletion: { _ in
             },
                   receiveValue: { randomUser in
-                    XCTAssertEqual(randomUser.firstName,"brad")
+                    XCTAssertEqual(randomUser.firstName, "brad")
                     XCTAssertEqual(randomUser.lastName, "gibson")
                     XCTAssertEqual(randomUser.email, "brad.gibson@example.com")
             }).store(in: &subscriptions)
@@ -52,7 +52,7 @@ final class JSONDeserrializerTests: XCTestCase {
 
     override func tearDown() {
         subscriptions.removeAll()
-        
+
         super.tearDown()
     }
 

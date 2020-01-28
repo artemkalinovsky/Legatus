@@ -7,7 +7,7 @@ public final class MultipartRequestSubscription<S: Subscriber>: Subscription whe
     private let apiRequest: APIRequest
     private let requestInputMultipartData: [String: URL]
     private var uploadRequest: UploadRequest?
-    private var uploadProgressObserver: ((Progress) -> Void)? = nil
+    private var uploadProgressObserver: ((Progress) -> Void)?
     private var isRequestInProgress = false
     private var subscriber: S?
 
