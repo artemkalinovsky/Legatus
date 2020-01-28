@@ -17,11 +17,9 @@ open class APIClient: NSObject {
     }
 
     let baseURL: URL
+
     private(set) var manager: SessionManager
-
-    private(set) var multipartRequestProgress: Double = 0
     private var reachabilityManager: NetworkReachabilityManager?
-
     private let deserializationQueue = DispatchQueue(label: "DeserializationQueue",
                                                      qos: .default,
                                                      attributes: .concurrent)
@@ -104,6 +102,7 @@ open class APIClient: NSObject {
     }
 
     public func cancelAllRequests() {
+        requestSubscriptions.forEach { $0.cancel() }
         manager.session.getTasksWithCompletionHandler { dataTasks, uploadTasks, downloadTasks in
             dataTasks.forEach { $0.cancel() }
             uploadTasks.forEach { $0.cancel() }

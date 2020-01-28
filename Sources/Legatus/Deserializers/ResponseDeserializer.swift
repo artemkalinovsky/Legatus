@@ -7,10 +7,18 @@ open class ResponseDeserializer<T> {
     }
 }
 
-open class EmptyDeserializer: ResponseDeserializer<Bool> {
-    public override func deserialize(data: Data, headers: [String: Any]? = nil) -> Future<Bool, Error> {
+open class EmptyDeserializer: ResponseDeserializer<Void> {
+    public override func deserialize(data: Data, headers: [String: Any]? = nil) -> Future<Void, Error> {
         return Future { promise in
-            promise(.success(true))
+            promise(.success(()))
+        }
+    }
+}
+
+open class RawDataDeserializer: ResponseDeserializer<Data> {
+    public override func deserialize(data: Data, headers: [String: Any]? = nil) -> Future<Data, Error> {
+        return Future { promise in
+            promise(.success(data))
         }
     }
 }
