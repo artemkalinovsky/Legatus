@@ -12,7 +12,7 @@ public enum JSONDeserializerError: Error {
 
 open class JSONDeserializer<T>: ResponseDeserializer<T> {
 
-    typealias Transform = ((Data, [String: Any]?) throws -> T)
+    typealias Transform = ((Data) throws -> T)
 
     let transform: Transform
 
@@ -21,7 +21,7 @@ open class JSONDeserializer<T>: ResponseDeserializer<T> {
     }
 
     convenience override init() {
-        self.init { jsonObject, _ -> T in
+        self.init { jsonObject -> T in
             if let object = jsonObject as? T {
                 return object
             }
@@ -29,11 +29,11 @@ open class JSONDeserializer<T>: ResponseDeserializer<T> {
         }
     }
 
-    public override func deserialize(data: Data, headers: [String: Any]? = nil) -> Future<T, Error> {
+    public override func deserialize(data: Data) -> Future<T, Error> {
         return Future { [weak self] promise in
             guard let self = self else { return }
             do {
-                let object = try self.transform(data, headers)
+                let object = try self.transform(data)
                 promise(.success(object))
             } catch {
                 promise(.failure(error))
@@ -45,7 +45,7 @@ open class JSONDeserializer<T>: ResponseDeserializer<T> {
 public extension JSONDeserializer where T: JSONDeserializable {
 
     class func singleObjectDeserializer(keyPath: String? = nil) -> JSONDeserializer<T> {
-        return JSONDeserializer { jsonDataObject, _ in
+        return JSONDeserializer { jsonDataObject in
             let json = JSON(jsonDataObject)
 
             guard let deserializedObject = keyPath == nil ? T(json: json) : T(json: json[keyPath!].json) else {
@@ -56,15 +56,15 @@ public extension JSONDeserializer where T: JSONDeserializable {
     }
 
     class func objectsArrayDeserializer(keyPath: String? = nil) -> JSONDeserializer<[T]> {
-        return JSONDeserializer<[T]>(transform: { jsonDataObject, _ in
+        return JSONDeserializer<[T]>(transform: { jsonDataObject in
             let json = JSON(jsonDataObject)
-            let jsonArrayValue = keyPath == nil ? json.jsonArrayValue : json[keyPath!].jsonArrayValue
+            let jsonArray = keyPath == nil ? json.jsonArrayValue : json[keyPath!].jsonArrayValue
 
-            if jsonArrayValue.isEmpty {
+            if jsonArray.isEmpty {
                 return []
             }
 
-            let deserializedObjects = jsonArrayValue.map { T(json: $0) }
+            let deserializedObjects = jsonArray.map { T(json: $0) }
 
             if deserializedObjects.contains(where: { $0 == nil }) {
                 throw JSONDeserializerError.jsonDeserializableInitFailed("Failed to create array of \(T.self) objects.")

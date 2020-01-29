@@ -75,7 +75,7 @@ open class APIClient: NSObject {
             })
             .flatMap { self.handle(apiResponse: $0) }
             .subscribe(on: deserializationQueue)
-            .flatMap { deserializer.deserialize(data: $0, headers: $1) }
+            .flatMap { deserializer.deserialize(data: $0) }
             .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { receivedCompletion in
                 if case let .failure(error) = receivedCompletion {
@@ -110,9 +110,8 @@ open class APIClient: NSObject {
         }
     }
 
-    private func handle(apiResponse: APIResponse) -> AnyPublisher<(Data, [String: Any]?), Error> {
+    private func handle(apiResponse: APIResponse) -> AnyPublisher<Data, Error> {
         return Future { promise in
-            let headers = apiResponse.httpUrlResponse?.allHeaderFields as? [String: Any]
             guard let statusCode = apiResponse.httpUrlResponse?.statusCode else {
                 promise(.failure(APIClientError.responseStatusCodeIsNil))
                 return
@@ -124,7 +123,7 @@ open class APIClient: NSObject {
             var success = true
             let responseData = apiResponse.responseData ?? Data(bytes: &success,
                                                                 count: MemoryLayout.size(ofValue: success))
-            promise(.success((responseData, headers)))
+            promise(.success(responseData))
         }.eraseToAnyPublisher()
     }
 

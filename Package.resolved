@@ -18,6 +18,15 @@
           "revision": "47d06b3f650867afd0a1fa8379d5b590855246db",
           "version": null
         }
+      },
+      {
+        "package": "SWXMLHash",
+        "repositoryURL": "https://github.com/drmohundro/SWXMLHash.git",
+        "state": {
+          "branch": "master",
+          "revision": "fd1783d3c923a84d747b2928e8882b3459705c95",
+          "version": null
+        }
       }
     ]
   },

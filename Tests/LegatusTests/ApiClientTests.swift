@@ -20,6 +20,25 @@ final class ApiClientTests: XCTestCase {
         wait(for: [httpBinGetRequestExpectation], timeout: 10.0)
     }
 
+    func testValidGetXmlRequest() {
+        let httpBinApiClient = APIClient(baseURL: URL(string: "https://httpbin.org/")!)
+        let httpBinGetXmlRequest = HttpBinGetXmlRequest()
+        let httpBinGetRequestExpectation = XCTestExpectation(description: "Execute api request.")
+
+        let expectedSlidesCount = 2
+        httpBinApiClient.executeRequest(request: httpBinGetXmlRequest) { result in
+            if case let .success(httpBinSlides) = result {
+                XCTAssertFalse(httpBinSlides.isEmpty)
+                XCTAssertTrue(httpBinSlides.count == expectedSlidesCount)
+            } else if case let .failure(error) = result{
+                XCTAssertTrue(false, "Unexpected response. Error: \(error)")
+            }
+            httpBinGetRequestExpectation.fulfill()
+        }
+
+        wait(for: [httpBinGetRequestExpectation], timeout: 10.0)
+    }
+
     func testParallelRequests() {
         let httpBinApiClient = APIClient(baseURL: URL(string: "https://httpbin.org/")!)
         let httpBinGetRequest = HttpBinGetRequest()
@@ -202,6 +221,7 @@ final class ApiClientTests: XCTestCase {
     static var allTests = [
         ("testValidGetRequest", testValidGetRequest),
         ("testParallelRequests", testParallelRequests),
+        ("testValidGetXmlRequest", testValidGetXmlRequest),
         ("testRandomUserArrayResponse", testRandomUserArrayResponse),
         ("testErrorResponse", testErrorResponse),
         ("testAuthRequest", testAuthRequest),

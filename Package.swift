@@ -16,12 +16,13 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "4.9.1")),
-        .package(url: "https://github.com/delba/JASON.git", .branch("master"))
+        .package(url: "https://github.com/delba/JASON.git", .branch("master")),
+        .package(url: "https://github.com/drmohundro/SWXMLHash.git", .branch("master"))
     ],
     targets: [
         .target(
             name: "Legatus",
-            dependencies: ["Alamofire", "JASON"]),
+            dependencies: ["Alamofire", "JASON", "SWXMLHash"]),
         .testTarget(
             name: "LegatusTests",
             dependencies: ["Legatus"])
