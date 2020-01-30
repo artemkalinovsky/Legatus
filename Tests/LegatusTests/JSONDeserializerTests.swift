@@ -19,6 +19,17 @@ final class JSONDeserrializerTests: XCTestCase {
             }).store(in: &subscriptions)
     }
 
+    func testSingleObjectKeyPathSequenceDeserialization() {
+        let randomUserJsonDeserializer = JSONDeserializer<Postcode>.singleObjectDeserializer(keyPath: "user", "location", "postcode")
+
+        randomUserJsonDeserializer.deserialize(data: JSONDataResponses.singleRandomUserJsonDataResponse)
+            .sink(receiveCompletion: { _ in
+            },
+                  receiveValue: { postcode in
+                    XCTAssertEqual(postcode.postcode, "93027")
+            }).store(in: &subscriptions)
+    }
+
     func testObjectsArrayDeserialization() {
         let randomUsersJsonDeserializer = JSONDeserializer<RandomUser>.objectsArrayDeserializer(keyPath: "results")
 
@@ -58,6 +69,7 @@ final class JSONDeserrializerTests: XCTestCase {
 
     static var allTests = [
         ("testSingleObjectDeserialization", testSingleObjectDeserialization),
+        ("testSingleObjectKeyPathSequenceDeserialization", testSingleObjectKeyPathSequenceDeserialization),
         ("testObjectsArrayDeserialization", testObjectsArrayDeserialization),
         ("testJsonMappingError", testJsonMappingError)
     ]

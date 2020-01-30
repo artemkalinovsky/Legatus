@@ -44,24 +44,23 @@ open class JSONDeserializer<T>: ResponseDeserializer<T> {
 
 public extension JSONDeserializer where T: JSONDeserializable {
 
-    class func singleObjectDeserializer(keyPath: String? = nil) -> JSONDeserializer<T> {
+    class func singleObjectDeserializer(keyPath path: String...) -> JSONDeserializer<T> {
         return JSONDeserializer { jsonDataObject in
             let json = JSON(jsonDataObject)
 
-            guard let deserializedObject = keyPath == nil ? T(json: json) : T(json: json[keyPath!].json) else {
-                throw JSONDeserializerError.jsonDeserializableInitFailed("Failed to create \(T.self) object.")
+            guard let deserializedObject = T(json: json[path].json) else {
+                throw JSONDeserializerError.jsonDeserializableInitFailed("Failed to create \(T.self) object form path \(path).")
             }
             return deserializedObject
         }
     }
 
-    class func objectsArrayDeserializer(keyPath: String? = nil) -> JSONDeserializer<[T]> {
+    class func objectsArrayDeserializer(keyPath path: String...) -> JSONDeserializer<[T]> {
         return JSONDeserializer<[T]>(transform: { jsonDataObject in
             let json = JSON(jsonDataObject)
-            let jsonArray = keyPath == nil ? json.jsonArrayValue : json[keyPath!].jsonArrayValue
 
-            if jsonArray.isEmpty {
-                return []
+            guard let jsonArray = json[path].jsonArray else {
+                throw JSONDeserializerError.jsonDeserializableInitFailed("Can't cast object at \(path) to array.")
             }
 
             let deserializedObjects = jsonArray.map { T(json: $0) }
