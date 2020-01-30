@@ -27,9 +27,11 @@ final class ApiClientTests: XCTestCase {
 
         let expectedSlidesCount = 2
         httpBinApiClient.executeRequest(request: httpBinGetXmlRequest) { result in
-            if case let .success(httpBinSlides) = result {
-                XCTAssertFalse(httpBinSlides.isEmpty)
-                XCTAssertTrue(httpBinSlides.count == expectedSlidesCount)
+            if case let .success(httpBinSlideshow) = result {
+                XCTAssertEqual(httpBinSlideshow.title, "Sample Slide Show")
+                XCTAssertEqual(httpBinSlideshow.author, "Yours Truly")
+                XCTAssertFalse(httpBinSlideshow.slides.isEmpty)
+                XCTAssertTrue(httpBinSlideshow.slides.count == expectedSlidesCount)
             } else if case let .failure(error) = result{
                 XCTAssertTrue(false, "Unexpected response. Error: \(error)")
             }

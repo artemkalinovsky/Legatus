@@ -3,7 +3,7 @@ import Combine
 import SWXMLHash
 
 public protocol XMLDeserializable {
-    init?(xmlIndexer: XMLIndexer)
+    init?(xmlIndexer: XMLIndexer, elementKey: String?)
 }
 
 public enum XMLDeserializerError: Error {
@@ -48,7 +48,7 @@ public extension XMLDeserializer where T: XMLDeserializable {
         return XMLDeserializer { xmlDataObject in
             let xml = SWXMLHash.lazy(xmlDataObject)
 
-            guard let deserializedObject = keyPath == nil ? T(xmlIndexer: xml) : T(xmlIndexer: xml[keyPath!]) else {
+            guard let deserializedObject = T(xmlIndexer: xml, elementKey: keyPath) else {
                 throw XMLDeserializerError.jsonDeserializableInitFailed("Failed to create \(T.self) object.")
             }
             return deserializedObject
@@ -65,7 +65,7 @@ public extension XMLDeserializer where T: XMLDeserializable {
                 return []
             }
 
-            let deserializedObjects = xmlArray.map { T(xmlIndexer: $0) }
+            let deserializedObjects = xmlArray.map { T(xmlIndexer: $0, elementKey: keyPath) }
 
             if deserializedObjects.contains(where: { $0 == nil }) {
                 throw XMLDeserializerError.jsonDeserializableInitFailed("Failed to create array of \(T.self) objects.")

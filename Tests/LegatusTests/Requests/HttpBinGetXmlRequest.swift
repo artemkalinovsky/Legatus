@@ -7,8 +7,8 @@ final class HttpBinGetXmlRequest: DeserializeableRequest {
         return "xml"
     }
 
-    var deserializer: ResponseDeserializer<[HttpBinXmlSlide]> {
-        return XMLDeserializer<HttpBinXmlSlide>.objectsArrayDeserializer(keyPath: "slide")
+    var deserializer: ResponseDeserializer<HttpBinXmlSlideshow> {
+        return XMLDeserializer<HttpBinXmlSlideshow>.singleObjectDeserializer(keyPath: "slideshow")
     }
 
 }
