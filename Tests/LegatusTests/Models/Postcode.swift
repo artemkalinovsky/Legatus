@@ -3,11 +3,9 @@ import JASON
 @testable import Legatus
 
 struct Postcode: JSONDeserializable {
-
-    let postcode: String?
+    let value: String?
 
     init?(json: JSON) {
-        self.postcode = json.string
+        self.value = json.string
     }
-
 }

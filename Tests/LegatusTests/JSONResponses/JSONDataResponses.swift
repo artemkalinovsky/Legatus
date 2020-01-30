@@ -1,6 +1,6 @@
 import Foundation
 
-struct JSONDataResponses {
+enum JSONDataResponses {
     static let singleRandomUserJsonDataResponse = """
           {
                         "user":

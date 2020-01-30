@@ -3,7 +3,7 @@ import Combine
 import SWXMLHash
 
 public protocol XMLDeserializable {
-    init?(xmlIndexer: XMLIndexer, elementKey: String?)
+    init?(xmlIndexer: XMLIndexer)
 }
 
 public enum XMLDeserializerError: Error {
@@ -44,28 +44,21 @@ open class XMLDeserializer<T>: ResponseDeserializer<T> {
 
 public extension XMLDeserializer where T: XMLDeserializable {
 
-    class func singleObjectDeserializer(keyPath: String? = nil) -> XMLDeserializer<T> {
+    class func singleObjectDeserializer(keyPath path: String...) -> XMLDeserializer<T> {
         return XMLDeserializer { xmlDataObject in
             let xml = SWXMLHash.lazy(xmlDataObject)
-
-            guard let deserializedObject = T(xmlIndexer: xml, elementKey: keyPath) else {
+            guard let deserializedObject = T(xmlIndexer: xml[path]) else {
                 throw XMLDeserializerError.jsonDeserializableInitFailed("Failed to create \(T.self) object.")
             }
             return deserializedObject
         }
     }
 
-    class func objectsArrayDeserializer(keyPath: String? = nil) -> XMLDeserializer<[T]> {
+    class func objectsArrayDeserializer(keyPath path: String...) -> XMLDeserializer<[T]> {
         return XMLDeserializer<[T]>(transform: { xmlDataObject in
             let xml = SWXMLHash.lazy(xmlDataObject)
 
-            let xmlArray = keyPath == nil ? xml.all : xml[keyPath!].all
-
-            if xmlArray.isEmpty {
-                return []
-            }
-
-            let deserializedObjects = xmlArray.map { T(xmlIndexer: $0, elementKey: keyPath) }
+            let deserializedObjects = xml[path].all.map { T(xmlIndexer: $0) }
 
             if deserializedObjects.contains(where: { $0 == nil }) {
                 throw XMLDeserializerError.jsonDeserializableInitFailed("Failed to create array of \(T.self) objects.")

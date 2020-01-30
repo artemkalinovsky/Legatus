@@ -26,7 +26,7 @@ final class JSONDeserrializerTests: XCTestCase {
             .sink(receiveCompletion: { _ in
             },
                   receiveValue: { postcode in
-                    XCTAssertEqual(postcode.postcode, "93027")
+                    XCTAssertEqual(postcode.value, "93027")
             }).store(in: &subscriptions)
     }
 

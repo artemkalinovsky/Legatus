@@ -47,7 +47,6 @@ public extension JSONDeserializer where T: JSONDeserializable {
     class func singleObjectDeserializer(keyPath path: String...) -> JSONDeserializer<T> {
         return JSONDeserializer { jsonDataObject in
             let json = JSON(jsonDataObject)
-
             guard let deserializedObject = T(json: json[path].json) else {
                 throw JSONDeserializerError.jsonDeserializableInitFailed("Failed to create \(T.self) object form path \(path).")
             }
@@ -58,17 +57,13 @@ public extension JSONDeserializer where T: JSONDeserializable {
     class func objectsArrayDeserializer(keyPath path: String...) -> JSONDeserializer<[T]> {
         return JSONDeserializer<[T]>(transform: { jsonDataObject in
             let json = JSON(jsonDataObject)
-
             guard let jsonArray = json[path].jsonArray else {
                 throw JSONDeserializerError.jsonDeserializableInitFailed("Can't cast object at \(path) to array.")
             }
-
             let deserializedObjects = jsonArray.map { T(json: $0) }
-
             if deserializedObjects.contains(where: { $0 == nil }) {
                 throw JSONDeserializerError.jsonDeserializableInitFailed("Failed to create array of \(T.self) objects.")
             }
-
             return deserializedObjects.compactMap { $0 }
         })
     }

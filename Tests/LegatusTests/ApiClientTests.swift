@@ -38,7 +38,26 @@ final class ApiClientTests: XCTestCase {
             httpBinGetRequestExpectation.fulfill()
         }
 
-        wait(for: [httpBinGetRequestExpectation], timeout: 10.0)
+        wait(for: [httpBinGetRequestExpectation], timeout: 20.0)
+    }
+
+    func testXmlRequestWithInnerKeypath() {
+        let expectedApiVersionValue = "1.3"
+
+        let randomUserApiClient = APIClient(baseURL: URL(string: "https://randomuser.me/api/")!)
+        let getRandomUserApiVersionRequest = GetRandomUserApiVersionRequest()
+        let randomUserApiRequestExpectation = XCTestExpectation(description: "Execute randomuser api request.")
+
+        randomUserApiClient.executeRequest(request: getRandomUserApiVersionRequest) { result in
+            if case let .success(apiVersion) = result {
+                XCTAssertEqual(apiVersion.value, expectedApiVersionValue)
+            } else if case let .failure(error) = result {
+                 XCTAssertTrue(false, "Unexpected response: \(error).")
+            }
+            randomUserApiRequestExpectation.fulfill()
+        }
+
+         wait(for: [randomUserApiRequestExpectation], timeout: 10.0)
     }
 
     func testParallelRequests() {
@@ -224,6 +243,7 @@ final class ApiClientTests: XCTestCase {
         ("testValidGetRequest", testValidGetRequest),
         ("testParallelRequests", testParallelRequests),
         ("testValidGetXmlRequest", testValidGetXmlRequest),
+        ("testXmlRequestWithInnerKeypath", testXmlRequestWithInnerKeypath),
         ("testRandomUserArrayResponse", testRandomUserArrayResponse),
         ("testErrorResponse", testErrorResponse),
         ("testAuthRequest", testAuthRequest),
