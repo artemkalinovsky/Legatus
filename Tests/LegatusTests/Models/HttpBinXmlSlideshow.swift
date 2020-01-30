@@ -18,11 +18,10 @@ struct HttpBinXmlSlideshow: XMLDeserializable {
     let slides: [HttpBinXmlSlide]
 
     init?(xmlIndexer: XMLIndexer, elementKey: String?) {
-        self.title = elementKey == nil ? xmlIndexer.element?.attribute(by: "title")?.text : xmlIndexer[elementKey!].element?.attribute(by: "title")?.text
-
-        self.author = elementKey == nil ? xmlIndexer.element?.attribute(by: "author")?.text : xmlIndexer[elementKey!].element?.attribute(by: "author")?.text
-
-        let slidesXml = elementKey == nil ? xmlIndexer["slide"].all : xmlIndexer["slideshow"]["slide"].all
-        self.slides = slidesXml.compactMap { HttpBinXmlSlide(xmlIndexer: $0, elementKey: nil) }
+        guard let slideShowKey = elementKey, slideShowKey == "slideshow" else { return nil }
+        self.title = xmlIndexer[slideShowKey].element?.attribute(by: "title")?.text
+        self.author = xmlIndexer[slideShowKey].element?.attribute(by: "author")?.text
+        self.slides = xmlIndexer[slideShowKey]["slide"].all
+            .compactMap { HttpBinXmlSlide(xmlIndexer: $0, elementKey: nil) }
     }
 }
