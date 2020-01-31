@@ -12,7 +12,8 @@ Luckily, *Legatus* was implemented with `Combine` framework and have couple of f
 ### Some awesome features of Legatus🌟:
 
 - SOLID design (`APIClient` don't stores and configures requests, each request is encapsulated in separate entity).
-- Elegant and easy retrying of requests.
+- Easy retrying of requests.
+- Elegant and flexible canceling of requests.
 - ***SwiftUI*** compatiblity out-of-the-box.
 - Support JSON and XML reponse formats.
 
