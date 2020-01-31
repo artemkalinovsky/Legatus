@@ -19,12 +19,14 @@ Luckily, *Legatus* was implemented with `Combine` framework and have couple of f
 
 *Legatus* is inspired by [Moya](https://github.com/Moya/Moya).
 
+
 ## 📝 Requirements
 - Swift 5.0+
 - macOS 10.15+
 - iOS 13+
 - tvOS 13+
 - watchOS 5+
+
 
 ## 📦 Installation
 
@@ -70,3 +72,8 @@ let package = Package(
 - [Combine Community](https://github.com/CombineCommunity)
 - @delba for [JASON](https://github.com/delba/JASON)
 - @drmohundro for [SWXMLHash](https://github.com/drmohundro/SWXMLHash)
+
+
+## License 📄
+
+Legatus is released under an MIT license. See [LICENCE.md](https://github.com/artemkalinovsky/Legatus/blob/master/LICENSE.md) for more information.
