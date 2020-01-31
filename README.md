@@ -21,7 +21,7 @@ Luckily, *Legatus* was implemented with `Combine` framework and have couple of f
 
 ## Project Status 🤖
 
-I consider it's ready for production use.
+I consider it's ready for production use.<br/>
 Any contributions (pull requests, questions, propositions) are always welcome!😃
 
 
