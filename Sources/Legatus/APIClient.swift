@@ -26,7 +26,7 @@ open class APIClient: NSObject {
 
     private var requestSubscriptions = Set<AnyCancellable>()
 
-    init(baseURL: URL) {
+    public init(baseURL: URL) {
         let configuration: URLSessionConfiguration = {
             let identifier = "URL Session for \(baseURL.absoluteString). Id: \(UUID().uuidString)"
             let configuration = URLSessionConfiguration.background(withIdentifier: identifier)
