@@ -81,4 +81,4 @@ let package = Package(
 
 ## License 📄
 
-Legatus is released under an MIT license. See [LICENCE.md](https://github.com/artemkalinovsky/Legatus/blob/master/LICENSE.md) for more information.
+Legatus is released under an MIT license. See [LICENCE](https://github.com/artemkalinovsky/Legatus/blob/master/LICENSE) for more information.
