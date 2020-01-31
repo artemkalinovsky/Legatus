@@ -26,6 +26,43 @@ Luckily, *Legatus* was implemented with `Combine` framework and have couple of f
 - tvOS 13+
 - watchOS 5+
 
+## 📦 Installation
+
+- #### Swift Package Manager
+
+You can use Xcode 11 SPM GUI: File -> Swift Packages -> Add Package Dependency.
+
+Or add the following to your `Package.swift` file:
+
+```swift
+.package(url: "https://github.com/artemkalinovsky/Legatus.git", .upToNextMajor(from: "1.0.0"))
+```
+
+and then specify `"Legatus"` as a dependency of the Target in which you wish to use Legatus.
+Here's an example `PackageDescription`:
+
+```swift
+// swift-tools-version:5.1
+import PackageDescription
+
+let package = Package(
+    name: "MyPackage",
+    products: [
+        .library(
+            name: "MyPackage",
+            targets: ["MyPackage"]),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/artemkalinovsky/Legatus.git", .upToNextMajor(from: "1.0.0"))
+    ],
+    targets: [
+        .target(
+            name: "MyPackage",
+            dependencies: ["Legatus"])
+    ]
+)
+```
+
 
 ## Credits 👏
 
