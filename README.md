@@ -37,7 +37,7 @@ Any contributions (pull requests, questions, propositions) are always welcome!ðŸ
 
 - #### Swift Package Manager
 
-You can use Xcode 11 SPM GUI: File -> Swift Packages -> Add Package Dependency.
+You can use Xcode 11 SPM GUI: *File -> Swift Packages -> Add Package Dependency*.
 
 Or add the following to your `Package.swift` file:
 
