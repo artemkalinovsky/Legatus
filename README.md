@@ -11,13 +11,20 @@ Luckily, *Legatus* was implemented with `Combine` framework and have couple of f
 
 ### Some awesome features of Legatus🌟:
 
-- SOLID design (`APIClient` don't stores and configures requests, each request is encapsulated in separate entity).
+- SOLID design (e.g.: `APIClient` don't stores and configures requests, each request is encapsulated in separate entity).
 - Easy retrying of requests.
 - Elegant and flexible canceling of requests.
 - ***SwiftUI*** compatiblity out-of-the-box.
 - Support JSON and XML reponse formats.
 
 *Legatus* is inspired by [Moya](https://github.com/Moya/Moya).
+
+## 📝 Requirements
+- Swift 5.0+
+- macOS 10.15+
+- iOS 13+
+- tvOS 13+
+- watchOS 5+
 
 
 ## Credits 👏
