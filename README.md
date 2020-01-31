@@ -6,6 +6,7 @@ The basic idea of *Legatus* is that we want some network abstraction layer that
 sufficiently encapsulates actually calling Alamofire directly.
 
 Also, it would be cool to have network layer, that will compatible with ***SwiftUI*** out-of-the-box 📦, isn't it?🧐
+
 Luckily, *Legatus* was implemented with `Combine` framework and have couple of fancy methods, that will allow you to `assign(to:on:)` your response models right to `@Published` properties. Neat!🤩
 
 ### Some awesome features of Legatus🌟:
