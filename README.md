@@ -19,6 +19,11 @@ Luckily, *Legatus* was implemented with `Combine` framework and have couple of f
 
 *Legatus* is inspired by [Moya](https://github.com/Moya/Moya).
 
+## Project Status 🤖
+
+I consider it's ready for production use.
+Any contributions (pull requests, questions, propositions) are always welcome!😃
+
 
 ## 📝 Requirements
 - Swift 5.0+
