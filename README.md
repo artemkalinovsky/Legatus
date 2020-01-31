@@ -25,7 +25,7 @@ I consider it's ready for production use.<br/>
 Any contributions (pull requests, questions, propositions) are always welcome!😃
 
 
-## 📝 Requirements
+## Requirements 📝 
 - Swift 5.0+
 - macOS 10.15+
 - iOS 13+
@@ -33,7 +33,7 @@ Any contributions (pull requests, questions, propositions) are always welcome!�
 - watchOS 5+
 
 
-## 📦 Installation
+## Installation 📦 
 
 - #### Swift Package Manager
 
