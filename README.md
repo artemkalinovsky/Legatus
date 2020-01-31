@@ -15,6 +15,12 @@ Luckily, *Legatus* was implemented with `Combine` framework and have couple of f
 - SwiftUI support.
 - Support JSON and XML reponse formats.
 
-
 *Legatus* is inspired by [Moya](https://github.com/Moya/Moya).
 
+
+## Credits 👏
+
+- [Moya](https://github.com/Moya/Moya)
+- [Combine Community](https://github.com/CombineCommunity)
+- @delba for [JASON](https://github.com/delba/JASON)
+- @drmohundro for [SWXMLHash](https://github.com/drmohundro/SWXMLHash)
