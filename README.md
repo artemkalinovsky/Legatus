@@ -37,12 +37,12 @@ Any contributions (pull requests, questions, propositions) are always welcome!ðŸ
 
 - #### Swift Package Manager
 
-You can use Xcode 11 SPM GUI: *File -> Swift Packages -> Add Package Dependency*.
+You can use Xcode 11 SPM GUI: *File -> Swift Packages -> Add Package Dependency -> Pick master branch*.
 
 Or add the following to your `Package.swift` file:
 
 ```swift
-.package(url: "https://github.com/artemkalinovsky/Legatus.git", .upToNextMajor(from: "1.0.0"))
+.package(url: "https://github.com/artemkalinovsky/Legatus.git", .branch("master"))
 ```
 
 and then specify `"Legatus"` as a dependency of the Target in which you wish to use Legatus.
@@ -60,7 +60,7 @@ let package = Package(
             targets: ["MyPackage"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/artemkalinovsky/Legatus.git", .upToNextMajor(from: "1.0.0"))
+        .package(url: "https://github.com/artemkalinovsky/Legatus.git", .branch("master"))
     ],
     targets: [
         .target(
