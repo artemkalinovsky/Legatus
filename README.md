@@ -139,10 +139,7 @@ final class UsersApiRequest: DeserializeableRequest {
 
 #### Perfrom created request
 ```swift
-        let usersApiRequest = UsersApiRequest()
-        
-        apiClient.executeRequest(request: usersApiRequest) { result in
-        }
+apiClient.executeRequest(request: UsersApiRequest()) { result in }
 ```
 
 Voilà!🧑‍🎨
