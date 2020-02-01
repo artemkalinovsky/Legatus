@@ -152,7 +152,7 @@ To deserialize your response right to CoreData `NSManagedObject`, just call desi
 @objc(CoreDataObject)
 public class CoreDataObject: NSManagedObject, JSONDeserializable {
 
-    required public init?(json: JSON) {
+    public required init?(json: JSON) {
         super.init(entity: /*provide NSEntityDescription*/, insertInto: /*provide NSManagedObjectContext*/)
         stringProperty = json.stringValue
     }
