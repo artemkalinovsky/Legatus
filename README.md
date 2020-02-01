@@ -87,11 +87,11 @@ Let's suppose we want to fetch list of users from JSON and response is look like
 }
 ```
 
-#### Setup
+- #### Setup
 
 1. Create `APIClient`:
 ```swift
-let apiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
+    let apiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
 ```
 
 2. Create response model:
@@ -137,12 +137,36 @@ final class UsersApiRequest: DeserializeableRequest {
 }
 ```
 
-#### Perfrom created request
+- #### Perfrom created request
 ```swift
-apiClient.executeRequest(request: UsersApiRequest()) { result in }
+    apiClient.executeRequest(request: UsersApiRequest()) { result in }
 ```
 
 Voilà!🧑‍🎨
+
+## Advanced Usage 🤓💻
+
+- #### Retrying requests
+If you want to retry previously failed request, just provide count of desiried retry times:
+```swift
+    apiClient.executeRequest(request: UsersApiRequest(), retries: 3) { result in }
+```
+
+- #### Request cancelation
+To cancel certaint request, you have to store it's cancelation token and call `cancel()` method.
+```swift
+        let cancelationToken = apiClient.executeRequest(request: UsersApiRequest()) { result in
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
+            cancelationToken?.cancel()
+        }
+```
+
+Also, you can cancel all active requests:
+```swift
+    apiClient.cancelAllRequests()
+```
 
 ## Credits 👏
 
