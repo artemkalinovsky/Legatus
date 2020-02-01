@@ -26,7 +26,7 @@ Any contributions (pull requests, questions, propositions) are always welcome!ğŸ
 
 
 ## Requirements ğŸ“ 
-- Swift 5.0+
+- Swift 5.1+
 - macOS 10.15+
 - iOS 13+
 - tvOS 13+
