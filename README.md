@@ -1,6 +1,6 @@
 # Legatus 🏇
 
-## Intro 🧑‍💻
+## Intro 🎬
 
 The basic idea of *Legatus* is that we want some network abstraction layer that
 sufficiently encapsulates actually calling Alamofire directly.
@@ -70,6 +70,82 @@ let package = Package(
 )
 ```
 
+## Basic Usage 🧑‍💻
+
+Let's suppose we want to fetch list of users from JSON and response is look like this:
+```json
+{ 
+   "results":[ 
+      { 
+         "name":{ 
+            "first":"brad",
+            "last":"gibson"
+         },
+         "email":"brad.gibson@example.com"
+      }
+   ]
+}
+```
+
+#### Setup
+
+1. Create `APIClient`:
+```swift
+let apiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
+```
+
+2. Create response model:
+```swift
+import Foundation
+import JASON
+import Legatus
+
+final class User: JSONDeserializable {
+    let firstName: String?
+    let lastName: String?
+    let email: String?
+
+    init?(json: JSON) {
+        guard let firstName = json["name"]["first"].string,
+            let lastName = json["name"]["last"].string,
+            let email = json["email"].string else {
+                return nil
+        }
+
+        self.firstName = firstName
+        self.lastName = lastName
+        self.email = email
+    }
+}
+```
+
+3. Create request with endpoint path and desired reponse deserializer:
+```swift
+import Foundation
+import Legatus
+
+final class UsersApiRequest: DeserializeableRequest {
+
+    var path: String {
+        return "users"
+    }
+    
+    var deserializer: ResponseDeserializer<[User]> {
+        return JSONDeserializer<User>.objectsArrayDeserializer(keyPath: "results")
+    }
+
+}
+```
+
+#### Perfrom created request
+```swift
+        let usersApiRequest = UsersApiRequest()
+        
+        apiClient.executeRequest(request: usersApiRequest) { result in
+        }
+```
+
+Voilà!🧑‍🎨
 
 ## Credits 👏
 
