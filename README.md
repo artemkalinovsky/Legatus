@@ -172,7 +172,7 @@ Also, you can cancel all active requests:
 While working with SwiftUI, where most of UI updates based on *Combine* mechanisms under the hood, it's very convenient to get
 `Publisher` as request result for future transformations and assigns:
 ```swift
-    @Published var users = [RandomUser]()
+    @Published var users = [User]()
     var subscriptions = Set<AnyCancellable>()
 
     apiClient
