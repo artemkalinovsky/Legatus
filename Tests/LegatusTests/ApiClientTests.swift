@@ -124,26 +124,28 @@ final class ApiClientTests: XCTestCase {
     }
 
     func testAuthRequest() {
-        let apiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
-        let testAuthRequest = TestAuthRequest()
-        testAuthRequest.accessToken = "test_token"
+        let accessToken = UUID().uuidString
+        let apiClient = APIClient(baseURL: URL(string: "https://httpbin.org/")!)
+        let testAuthRequest = HttpBinBearerAuthRequest()
+        testAuthRequest.accessToken = accessToken
         let apiRequestExpectation = XCTestExpectation(description: "Execute api request.")
 
         apiClient.executeRequest(request: testAuthRequest) { result in
-            if case .failure(_) = result {
-                XCTAssertTrue(true)
+            if case let .success(httpBinBearerAuthResponse) = result {
+                XCTAssertTrue(httpBinBearerAuthResponse.isAuthenticated)
+                XCTAssertEqual(httpBinBearerAuthResponse.token, accessToken)
             } else {
                 XCTAssertTrue(false, "Unexpected success response.")
             }
             apiRequestExpectation.fulfill()
         }
 
-        wait(for: [apiRequestExpectation], timeout: 20.0)
+        wait(for: [apiRequestExpectation], timeout: 10.0)
     }
 
     func testMissedAccessToken() {
         let apiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
-        let brokenAuthRequest = TestAuthRequest()
+        let brokenAuthRequest = HttpBinBearerAuthRequest()
         let apiRequestExpectation = XCTestExpectation(description: "Execute api request.")
 
         apiClient.executeRequest(request: brokenAuthRequest) { result in
