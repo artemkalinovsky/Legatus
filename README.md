@@ -168,6 +168,21 @@ Also, you can cancel all active requests:
     apiClient.cancelAllRequests()
 ```
 
+## Combine Extension 🚜
+
+While working with SwiftUI, where most of UI updates based on *Combine* mechanisms under the hood, it's very convenient to get
+`Publisher` as request result for future transformations and assigns:
+```swift
+    @Published var users = [RandomUser]()
+    var subscriptions = Set<AnyCancellable>()
+
+    apiClient
+         .requestPublisher(request: UsersApiRequest())
+         .catch { _ in return Just([User]())}
+         .assign(to: \.users, on: self)
+         .store(in: &subscriptions)
+```
+
 ## Credits 👏
 
 - [Moya](https://github.com/Moya/Moya)
