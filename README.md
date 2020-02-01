@@ -183,6 +183,46 @@ final class RealmObject: Object, JSONDeserializable {
 }
 ```
 
+- #### Using keypath chaing in response deserializer
+```json
+{ 
+   "user":{ 
+      "name":{ 
+         "first":"brad",
+         "last":"gibson"
+      }
+   }
+}
+```
+```swift
+import Foundation
+import JASON
+import Legatus
+
+final class UserName: JSONDeserializable {
+    let firstName: String?
+    let lastName: String?
+
+    init?(json: JSON) {
+        self.firstName = json["first"].string
+        self.lastName = json["last"].string
+    }
+}
+```
+```swift
+import Foundation
+import Legatus
+
+final class UserNameApiRequest: DeserializeableRequest {
+    
+    var deserializer: ResponseDeserializer<UserName> {
+        return JSONDeserializer<UserName>.singleObjectDeserializer(keyPath: "user", "name")
+    }
+
+}
+```
+Same functionality available for `XMLDeserializer` too.
+
 - #### Retrying requests
 If you want to retry previously failed request, just provide count of desiried retry times:
 ```swift
