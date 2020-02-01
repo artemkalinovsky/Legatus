@@ -146,6 +146,43 @@ Voilà!🧑‍🎨
 
 ## Advanced Usage 🤓💻
 
+- #### Working with CoreData models.
+To deserialize your response right to CoreData `NSManagedObject`, just call designated initializer firstly:
+```swift
+@objc(CoreDataObject)
+public class CoreDataObject: NSManagedObject, JSONDeserializable {
+
+    required public init?(json: JSON) {
+        super.init(entity: /*provide NSEntityDescription*/, insertInto: /*provide NSManagedObjectContext*/)
+        stringProperty = json.stringValue
+    }
+
+}
+```
+
+- #### Working with [Realm](https://github.com/realm/realm-cocoa) models.
+To deserialize your response right to Realm `Object` subclass:
+```swift
+import Foundation
+import RealmSwift
+import JASON
+import Legatus
+
+final class RealmObject: Object, JSONDeserializable {
+
+    @objc dynamic var name = ""
+
+    convenience required init?(json: JSON) {
+        self.init()
+        name = json["name"].stringValue
+    }
+
+    required init() {
+        super.init()
+    }
+}
+```
+
 - #### Retrying requests
 If you want to retry previously failed request, just provide count of desiried retry times:
 ```swift
