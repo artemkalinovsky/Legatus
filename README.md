@@ -155,12 +155,11 @@ If you want to retry previously failed request, just provide count of desiried r
 - #### Request cancelation
 To cancel certaint request, you have to store it's cancelation token and call `cancel()` method.
 ```swift
-        let cancelationToken = apiClient.executeRequest(request: UsersApiRequest()) { result in
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
+    let cancelationToken = apiClient.executeRequest(request: UsersApiRequest()) { result in }
+    
+    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
             cancelationToken?.cancel()
-        }
+    }
 ```
 
 Also, you can cancel all active requests:
