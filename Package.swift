@@ -17,7 +17,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "4.9.1")),
         .package(url: "https://github.com/delba/JASON.git", .branch("master")),
-        .package(url: "https://github.com/drmohundro/SWXMLHash.git", .branch("master"))
+        .package(url: "https://github.com/drmohundro/SWXMLHash.git", .upToNextMajor(from: "5.0.1"))
     ],
     targets: [
         .target(
