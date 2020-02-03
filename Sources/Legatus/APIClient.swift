@@ -6,7 +6,7 @@ public enum APIClientError: Error, Equatable {
     case unreachableNetwork, responseStatusCodeIsNil, responseErrorStatus(Int), requestCancelled
 }
 
-open class APIClient: NSObject {
+open class APIClient {
     private struct Constants {
         static let hostNameKey = "host"
         static let reachableKey = "reachable"
@@ -34,8 +34,6 @@ open class APIClient: NSObject {
         }()
         self.baseURL = baseURL
         manager = SessionManager(configuration: configuration)
-
-        super.init()
 
         if let host = baseURL.host {
             reachabilityManager = NetworkReachabilityManager(host: host)
