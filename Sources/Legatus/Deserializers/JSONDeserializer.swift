@@ -11,16 +11,7 @@ public enum JSONDeserializerError: Error {
 }
 
 open class JSONDeserializer<T>: ResponseDeserializer<T> {
-
-    typealias Transform = ((Data) throws -> T)
-
-    let transform: Transform
-
-    init(transform: @escaping Transform) {
-        self.transform = transform
-    }
-
-    convenience override init() {
+    convenience init() {
         self.init { jsonObject -> T in
             if let object = jsonObject as? T {
                 return object

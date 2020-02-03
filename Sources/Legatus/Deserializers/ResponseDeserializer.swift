@@ -2,6 +2,14 @@ import Foundation
 import Combine
 
 open class ResponseDeserializer<T> {
+    typealias Transform = ((Data) throws -> T)
+
+    let transform: Transform
+
+    init(transform: @escaping Transform) {
+        self.transform = transform
+    }
+
     public func deserialize(data: Data) -> Future<T, Error> {
         fatalError("Not Implemented")
     }

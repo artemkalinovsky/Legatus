@@ -11,16 +11,7 @@ public enum XMLDeserializerError: Error {
 }
 
 open class XMLDeserializer<T>: ResponseDeserializer<T> {
-
-    typealias Transform = ((Data) throws -> T)
-
-    let transform: Transform
-
-    init(transform: @escaping Transform) {
-        self.transform = transform
-    }
-
-    convenience override init() {
+    convenience init() {
         self.init { xmlObject -> T in
             if let xmlObject = xmlObject as? T {
                 return xmlObject
