@@ -34,27 +34,28 @@ public final class MultipartRequestSubscription<S: Subscriber>: Subscription whe
         isRequestInProgress = true
         apiClient.manager.upload(multipartFormData: { [weak self] multipartFormData in
             self?.requestInputMultipartData.forEach { multipartFormData.append($0.value, withName: $0.key) }
-        }, to: apiRequest.configurePath(baseUrl: apiClient.baseURL),
-           method: apiRequest.method,
-           headers: headers) { [weak self] result in
-            switch result {
-            case .success(let uploadRequest, _, _):
-                self?.uploadRequest = uploadRequest
-                uploadRequest.uploadProgress(closure: { [weak self] progress in
-                    self?.uploadProgressObserver?(progress)
-                })
-                uploadRequest.responseData(completionHandler: { dataResponse in
+            }, to: apiRequest.configurePath(baseUrl: apiClient.baseURL),
+               method: apiRequest.method,
+               headers: headers) { [weak self] result in
+                switch result {
+                case .success(let uploadRequest, _, _):
+                    self?.uploadRequest = uploadRequest
+                    uploadRequest.uploadProgress(closure: { [weak self] progress in
+                        self?.uploadProgressObserver?(progress)
+                    })
+                    uploadRequest.responseData(completionHandler: { dataResponse in
+                        self?.isRequestInProgress = false
+                        guard let error = dataResponse.error else {
+                            _ = self?.subscriber?.receive(dataResponse)
+                            self?.subscriber?.receive(completion: .finished)
+                            return
+                        }
+                        self?.subscriber?.receive(completion: .failure(error))
+                    })
+                case .failure(let encodingError):
                     self?.isRequestInProgress = false
-                    guard let error = dataResponse.error else {
-                        _ = self?.subscriber?.receive(dataResponse)
-                        return
-                    }
-                    self?.subscriber?.receive(completion: .failure(error))
-                })
-            case .failure(let encodingError):
-                self?.isRequestInProgress = false
-                self?.subscriber?.receive(completion: .failure(encodingError))
-            }
+                    self?.subscriber?.receive(completion: .failure(encodingError))
+                }
         }
     }
 
