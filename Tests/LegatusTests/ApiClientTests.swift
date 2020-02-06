@@ -177,7 +177,7 @@ final class ApiClientTests: XCTestCase {
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
-            cancelationToken?.cancel()
+            cancelationToken.cancel()
         }
 
         wait(for: [httpBinGetRequestExpectation], timeout: 10.0)

@@ -3,27 +3,17 @@ import Combine
 import Alamofire
 
 public enum APIClientError: Error, Equatable {
-    case unreachableNetwork, responseStatusCodeIsNil, responseErrorStatus(Int), requestCancelled
+    case responseStatusCodeIsNil, responseErrorStatus(Int), requestCancelled
 }
 
 open class APIClient {
-    private struct Constants {
-        static let hostNameKey = "host"
-        static let reachableKey = "reachable"
-    }
-
-    var isReachable: Bool {
-        return reachabilityManager?.isReachable ?? false
-    }
-
     let baseURL: URL
+    let manager: SessionManager
 
-    private(set) var manager: SessionManager
-    private var reachabilityManager: NetworkReachabilityManager?
     private let deserializationQueue = DispatchQueue(label: "DeserializationQueue",
                                                      qos: .default,
                                                      attributes: .concurrent)
-
+    
     private var requestSubscriptions = Set<AnyCancellable>()
 
     public init(baseURL: URL) {
@@ -34,36 +24,15 @@ open class APIClient {
         }()
         self.baseURL = baseURL
         manager = SessionManager(configuration: configuration)
-
-        if let host = baseURL.host {
-            reachabilityManager = NetworkReachabilityManager(host: host)
-            reachabilityManager?.listener = { status in
-                NotificationCenter.default.post(name: Notification.Name.APIClientReachabilityChangedNotification,
-                                                object: self,
-                                                userInfo: [Constants.hostNameKey: host,
-                                                           Constants.reachableKey: status != .notReachable])
-            }
-            reachabilityManager?.startListening()
-        }
-    }
-
-    deinit {
-        reachabilityManager?.stopListening()
     }
 
     @discardableResult public func executeRequest<T>(_ request: APIRequest,
                                                      retries: Int = 0,
                                                      deserializer: ResponseDeserializer<T>,
                                                      uploadProgressObserver: ((Progress) -> Void)? = nil,
-                                                     completion: @escaping (Swift.Result<T, Error>) -> Void) -> AnyCancellable? {
-        var cancellableToken: AnyCancellable?
+                                                     completion: @escaping (Swift.Result<T, Error>) -> Void) -> AnyCancellable {
 
-        if reachabilityManager?.isReachable == false {
-            completion(.failure(APIClientError.unreachableNetwork))
-            return cancellableToken
-        }
-
-        cancellableToken = (request.multipartFormData == nil ?
+        let cancellableToken = (request.multipartFormData == nil ?
             requestResponsePublisher(request) : multipartRequestResponsePublisher(request,
                                                                                   requestInputMultipartData: request.multipartFormData!,
                                                                                   uploadProgressObserver: uploadProgressObserver))
@@ -83,7 +52,7 @@ open class APIClient {
                 completion(.success(value))
             })
 
-        cancellableToken?.store(in: &requestSubscriptions)
+        cancellableToken.store(in: &requestSubscriptions)
 
         return cancellableToken
     }
@@ -91,7 +60,7 @@ open class APIClient {
     @discardableResult public func executeRequest<T: DeserializeableRequest, U>(request: T,
                                                                                 retries: Int = 0,
                                                                                 uploadProgressObserver: ((Progress) -> Void)? = nil,
-                                                                                completion: @escaping (Swift.Result<U, Error>) -> Void) -> AnyCancellable? where U == T.ResponseType {
+                                                                                completion: @escaping (Swift.Result<U, Error>) -> Void) -> AnyCancellable where U == T.ResponseType {
         return executeRequest(request,
                               retries: retries,
                               deserializer: request.deserializer,
