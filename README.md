@@ -16,6 +16,7 @@ Luckily, *Legatus* was implemented with `Combine` framework and have couple of f
 - Elegant and flexible canceling of requests.
 - ***SwiftUI*** compatibility out-of-the-box.
 - Support JSON and XML response formats.
+- Combine-driven reachability tracking.
 
 *Legatus* is inspired by [Moya](https://github.com/Moya/Moya).
 
@@ -101,9 +102,9 @@ import JASON
 import Legatus
 
 final class User: JSONDeserializable {
-    let firstName: String?
-    let lastName: String?
-    let email: String?
+    let firstName: String
+    let lastName: String
+    let email: String
 
     init?(json: JSON) {
         guard let firstName = json["name"]["first"].string,
@@ -235,7 +236,7 @@ To cancel certaint request, you have to store it's cancelation token and call `c
     let cancelationToken = apiClient.executeRequest(request: UsersApiRequest()) { result in }
     
     DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
-            cancelationToken?.cancel()
+            cancelationToken.cancel()
     }
 ```
 
