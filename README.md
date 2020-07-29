@@ -1,4 +1,6 @@
 # Legatus 🏇
+A legatus (anglicised as legate) was a high-ranking Roman military officer in the Roman Army, equivalent to a modern high-ranking general officer. Initially used to delegate power, the term became formalised under Augustus as the officer in command of a legion.
+Legatus was also a term for an ambassador of the Roman Republic who was appointed by the senate for a mission (legatio) to a foreign nation, as well as for ambassadors who came to Rome from other countries.
 
 ## Intro 🎬
 
@@ -184,7 +186,7 @@ final class RealmObject: Object, JSONDeserializable {
 }
 ```
 
-- #### Using keypath chaing in response deserializer
+- #### Using keypath chaining in response deserializer
 ```json
 { 
    "user":{ 
