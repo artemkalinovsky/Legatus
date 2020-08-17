@@ -233,7 +233,7 @@ If you want to retry previously failed request, just provide count of desiried r
 ```
 
 - #### Request cancelation
-To cancel certaint request, you have to store it's cancelation token and call `cancel()` method.
+To cancel certain request, you have to store it's cancelation token and call `cancel()` method.
 ```swift
     let cancelationToken = apiClient.executeRequest(request: UsersApiRequest()) { result in }
     
