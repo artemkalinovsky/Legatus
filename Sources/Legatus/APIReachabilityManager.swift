@@ -17,17 +17,15 @@ open class APIReachabilityManager {
             stop()
         }
         reachabilityManager = NetworkReachabilityManager(host: host)
-        reachabilityManager?.listener = { [unowned self] status in
-            self.isReachable = status == .reachable(.ethernetOrWiFi) || status == .reachable(.wwan)
+        reachabilityManager?.startListening { [unowned self] listener in
+            self.isReachable = listener == .reachable(.ethernetOrWiFi) || listener == .reachable(.cellular)
         }
-        reachabilityManager?.startListening()
         isReachable = reachabilityManager?.isReachable ?? false
         isStarted = true
     }
 
     public func stop() {
         reachabilityManager?.stopListening()
-        reachabilityManager?.listener = nil
         reachabilityManager = nil
         isStarted = false
         isReachable = false

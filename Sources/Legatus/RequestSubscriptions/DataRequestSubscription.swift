@@ -16,13 +16,14 @@ public final class DataRequestSubscription<S: Subscriber>: Subscription where S.
     }
 
     public func request(_ demand: Subscribers.Demand) {
-        var headers = [String: String]()
-        switch apiRequest.configureHeaders() {
+        var headers = HTTPHeaders()
+        switch apiRequest.configureHTTPHeaders() {
         case .success(let configuredHeaders):
             headers = configuredHeaders
         case .failure(let responseError):
             subscriber?.receive(completion: .failure(responseError))
         }
+
         isRequestInProgress = true
         dataRequest = apiClient.manager.request(apiRequest.configurePath(baseUrl: apiClient.baseURL),
                                                 method: apiRequest.method,

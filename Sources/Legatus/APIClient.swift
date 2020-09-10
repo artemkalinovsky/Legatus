@@ -8,7 +8,7 @@ public enum APIClientError: Error, Equatable {
 
 open class APIClient {
     let baseURL: URL
-    let manager: SessionManager
+    let manager: Session
 
     private let deserializationQueue = DispatchQueue(label: "DeserializationQueue",
                                                      qos: .default,
@@ -19,11 +19,16 @@ open class APIClient {
     public init(baseURL: URL) {
         let configuration: URLSessionConfiguration = {
             let identifier = "URL Session for \(baseURL.absoluteString). Id: \(UUID().uuidString)"
+            //FIXME: - Alamofire does not support background URLSessionConfigurations.
+            /*
+             * https://github.com/Alamofire/Alamofire/issues/2233
+             * https://github.com/Alamofire/Alamofire/issues/2743
+             */
             let configuration = URLSessionConfiguration.background(withIdentifier: identifier)
             return configuration
         }()
         self.baseURL = baseURL
-        manager = SessionManager(configuration: configuration)
+        manager = Session(configuration: configuration)
     }
 
     @discardableResult public func executeRequest<T>(_ request: APIRequest,
