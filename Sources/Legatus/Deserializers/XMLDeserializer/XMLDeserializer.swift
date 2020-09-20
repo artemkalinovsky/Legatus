@@ -45,7 +45,7 @@ public extension XMLDeserializer where T: XMLDeserializable {
         }
     }
 
-    class func objectsArrayDeserializer(keyPath path: String...) -> XMLDeserializer<[T]> {
+    class func collectionDeserializer(keyPath path: String...) -> XMLDeserializer<[T]> {
         return XMLDeserializer<[T]>(transform: { xmlDataObject in
             let xml = SWXMLHash.lazy(xmlDataObject)
 

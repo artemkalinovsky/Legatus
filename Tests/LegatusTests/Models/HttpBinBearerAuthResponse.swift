@@ -1,6 +1,6 @@
 import Foundation
 
-struct HttbinBearerAuthResponse: Decodable {
+struct HttpBinBearerAuthResponse: Decodable {
     let authenticated: Bool
     let token: String
 

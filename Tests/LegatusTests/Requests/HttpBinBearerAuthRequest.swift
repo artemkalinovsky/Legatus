@@ -9,7 +9,7 @@ final class HttpBinBearerAuthRequest: AuthRequest, DeserializeableRequest {
         return "bearer"
     }
 
-    var deserializer: ResponseDeserializer<HttbinBearerAuthResponse> {
-        return JSONDeserializer<HttbinBearerAuthResponse>.singleObjectDeserializer()
+    var deserializer: ResponseDeserializer<HttpBinBearerAuthResponse> {
+        return JSONDeserializer<HttpBinBearerAuthResponse>.singleObjectDeserializer()
     }
 }

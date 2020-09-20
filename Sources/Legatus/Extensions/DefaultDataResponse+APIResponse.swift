@@ -3,10 +3,10 @@ import Alamofire
 
 extension DefaultDataResponse: APIResponse {
     public var responseData: Data? {
-        return data
+        data
     }
 
     public var httpUrlResponse: HTTPURLResponse? {
-        return response
+        response
     }
 }
