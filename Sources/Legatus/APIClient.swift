@@ -13,7 +13,7 @@ open class APIClient {
     private let deserializationQueue = DispatchQueue(label: "DeserializationQueue",
                                                      qos: .default,
                                                      attributes: .concurrent)
-    
+
     private var requestSubscriptions = Set<AnyCancellable>()
 
     public init(baseURL: URL) {

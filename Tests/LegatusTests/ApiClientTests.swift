@@ -11,7 +11,7 @@ final class ApiClientTests: XCTestCase {
         httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
             if case let .success(httpBinGetResponse) = result {
                 XCTAssertEqual(httpBinGetResponse.url, "https://httpbin.org/get")
-            } else if case let .failure(error) = result{
+            } else if case let .failure(error) = result {
                 XCTAssertTrue(false, "Unexpected response. Error: \(error)")
             }
             httpBinGetRequestExpectation.fulfill()
@@ -32,7 +32,7 @@ final class ApiClientTests: XCTestCase {
                 XCTAssertEqual(httpBinSlideshow.author, "Yours Truly")
                 XCTAssertFalse(httpBinSlideshow.slides.isEmpty)
                 XCTAssertTrue(httpBinSlideshow.slides.count == expectedSlidesCount)
-            } else if case let .failure(error) = result{
+            } else if case let .failure(error) = result {
                 XCTAssertTrue(false, "Unexpected response. Error: \(error)")
             }
             httpBinGetRequestExpectation.fulfill()
@@ -69,7 +69,7 @@ final class ApiClientTests: XCTestCase {
         httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
             if case let .success(httpBinGetResponse) = result {
                 XCTAssertEqual(httpBinGetResponse.url, "https://httpbin.org/get")
-            } else if case let .failure(error) = result{
+            } else if case let .failure(error) = result {
                 XCTAssertTrue(false, "Unexpected response. Error: \(error)")
             }
             firstRequestExpectation.fulfill()
@@ -78,7 +78,7 @@ final class ApiClientTests: XCTestCase {
         httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
             if case let .success(httpBinGetResponse) = result {
                 XCTAssertEqual(httpBinGetResponse.url, "https://httpbin.org/get")
-            } else if case let .failure(error) = result{
+            } else if case let .failure(error) = result {
                 XCTAssertTrue(false, "Unexpected response. Error: \(error)")
             }
             secondRequestExpectation.fulfill()
@@ -112,7 +112,7 @@ final class ApiClientTests: XCTestCase {
         let apiRequestExpectation = XCTestExpectation(description: "Execute api request.")
 
         apiClient.executeRequest(request: randomUserApiRequest) { result in
-            if case .failure(_) = result {
+            if case .failure = result {
                 XCTAssertTrue(true)
             } else {
                 XCTAssertTrue(false, "Unexpected success response.")
@@ -168,7 +168,7 @@ final class ApiClientTests: XCTestCase {
         let cancelationToken = httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
             if case let .failure(error) = result, let apiClientError = error as? APIClientError {
                 XCTAssertTrue(apiClientError == APIClientError.requestCancelled)
-            } else if case .success(_) = result {
+            } else if case .success = result {
                 XCTAssertTrue(true)
             } else {
                 XCTAssertTrue(false, "Unexpected success response.")
@@ -215,7 +215,7 @@ final class ApiClientTests: XCTestCase {
         httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
             if case let .failure(error) = result, let apiClientError = error as? APIClientError {
                 XCTAssertTrue(apiClientError == APIClientError.requestCancelled)
-            } else if case .success(_) = result {
+            } else if case .success = result {
                 XCTAssertTrue(true)
             } else {
                 XCTAssertTrue(false, "Unexpected success response.")
@@ -226,7 +226,7 @@ final class ApiClientTests: XCTestCase {
         httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
             if case let .failure(error) = result, let apiClientError = error as? APIClientError {
                 XCTAssertTrue(apiClientError == APIClientError.requestCancelled)
-            } else if case .success(_) = result {
+            } else if case .success = result {
                 XCTAssertTrue(true)
             } else {
                 XCTAssertTrue(false, "Unexpected success response.")
