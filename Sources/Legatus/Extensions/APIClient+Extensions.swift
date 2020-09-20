@@ -7,7 +7,9 @@ public extension APIClient {
                              deserializer: ResponseDeserializer<T>,
                              uploadProgressObserver: ((Progress) -> Void)? = nil) -> AnyPublisher<T, Error> {
         return Deferred {
-            return Future { promise in
+            return Future { [weak self] promise in
+                guard let self = self else { return }
+
                 self.executeRequest(request,
                                     deserializer: deserializer,
                                     uploadProgressObserver: uploadProgressObserver) { result in
@@ -25,7 +27,9 @@ public extension APIClient {
     func requestPublisher<T: DeserializeableRequest, U>(request: T,
                                                         uploadProgressObserver: ((Progress) -> Void)? = nil) -> AnyPublisher<U, Error> where U == T.ResponseType {
         return Deferred {
-            return Future { promise in
+            return Future { [weak self] promise in
+                guard let self = self else { return }
+
                 self.executeRequest(request: request,
                                     uploadProgressObserver: uploadProgressObserver) { result in
                                         switch result {

@@ -1,11 +1,9 @@
 import Foundation
-import JASON
-@testable import Legatus
 
-struct HttpBinGetResponse: JSONDeserializable {
-    let urlString: String?
+struct HttpBinGetResponse: Decodable {
+    let url: String
 
-    init?(json: JSON) {
-        self.urlString = json["url"].string
+    enum CodingKeys: String, CodingKey {
+        case url
     }
 }

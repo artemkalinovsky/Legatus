@@ -1,21 +1,26 @@
 import Foundation
-import JASON
-@testable import Legatus
 
-final class BrokenRandomUser: JSONDeserializable {
-    let firstName: String
-    let lastName: String
-    let email: String
+final class BrokenRandomUser: Decodable {
+    let firstName: String?
+    let lastName: String?
+    let email: String?
 
-    init?(json: JSON) {
-        guard let firstName = json["firstName"].string,
-            let lastName = json["lastName"].string,
-            let email = json["email"].string else {
-                return nil
-        }
+    enum CodingKeys: String, CodingKey {
+        case name
+        case email
+    }
 
-        self.firstName = firstName
-        self.lastName = lastName
-        self.email = email
+    enum NameKeys: String, CodingKey {
+        case firstName
+        case lastName
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        email = try values.decodeIfPresent(String.self, forKey: .email)
+
+        let name = try values.nestedContainer(keyedBy: NameKeys.self, forKey: .name)
+        firstName = try name.decodeIfPresent(String.self, forKey: .firstName)
+        lastName = try name.decodeIfPresent(String.self, forKey: .lastName)
     }
 }
