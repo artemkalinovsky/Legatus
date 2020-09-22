@@ -2,7 +2,7 @@ import Foundation
 import Combine
 import Alamofire
 
-public struct MultipartRequestPublisher: Publisher {
+public struct MultipartResponsePublisher: Publisher {
     public typealias Output = APIResponse
     public typealias Failure = Error
 
@@ -23,7 +23,7 @@ public struct MultipartRequestPublisher: Publisher {
 
     public func receive<S: Subscriber>(subscriber: S) where Failure == S.Failure, Output == S.Input {
         guard let apiClient = apiClient else { return }
-        let multipartRequestSubsription = MultipartRequestSubscription(subscriber: subscriber,
+        let multipartRequestSubsription = MultipartResponseSubscription(subscriber: subscriber,
                                                                        apiClient: apiClient,
                                                                        apiRequest: apiRequest,
                                                                        requestInputMultipartData: requestInputMultipartData,

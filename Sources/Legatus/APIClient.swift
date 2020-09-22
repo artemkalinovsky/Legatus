@@ -38,7 +38,7 @@ open class APIClient {
                                                                                   uploadProgressObserver: uploadProgressObserver))
             .retry(retries)
             .handleEvents(receiveCancel: {
-                 completion(.failure(APIClientError.requestCancelled))
+                completion(.failure(APIClientError.requestCancelled))
             })
             .flatMap { self.handle(apiResponse: $0) }
             .subscribe(on: deserializationQueue)
@@ -61,11 +61,11 @@ open class APIClient {
                                                                                 retries: Int = 0,
                                                                                 uploadProgressObserver: ((Progress) -> Void)? = nil,
                                                                                 completion: @escaping (Swift.Result<U, Error>) -> Void) -> AnyCancellable where U == T.ResponseType {
-        return executeRequest(request,
-                              retries: retries,
-                              deserializer: request.deserializer,
-                              uploadProgressObserver: uploadProgressObserver,
-                              completion: completion)
+        executeRequest(request,
+                       retries: retries,
+                       deserializer: request.deserializer,
+                       uploadProgressObserver: uploadProgressObserver,
+                       completion: completion)
     }
 
     public func cancelAllRequests() {
@@ -95,19 +95,19 @@ open class APIClient {
     }
 
     private func requestResponsePublisher(_ request: APIRequest) -> AnyPublisher<APIResponse, Error> {
-        return Deferred<DataRequestPublisher> { [weak self] in
-            return DataRequestPublisher(apiClient: self, apiRequest: request)
+        Deferred<DataResponsePublisher> { [weak self] in
+            DataResponsePublisher(apiClient: self, apiRequest: request)
         }.eraseToAnyPublisher()
     }
 
     private func multipartRequestResponsePublisher(_ request: APIRequest,
                                                    requestInputMultipartData: [String: URL],
                                                    uploadProgressObserver: ((Progress) -> Void)? = nil) -> AnyPublisher<APIResponse, Error> {
-        return Deferred { [weak self] in
-            return MultipartRequestPublisher(apiClient: self,
-                                             apiRequest: request,
-                                             requestInputMultipartData: requestInputMultipartData,
-                                             uploadProgressObserver: uploadProgressObserver)
+        Deferred { [weak self] in
+            MultipartResponsePublisher(apiClient: self,
+                                       apiRequest: request,
+                                       requestInputMultipartData: requestInputMultipartData,
+                                       uploadProgressObserver: uploadProgressObserver)
         }.eraseToAnyPublisher()
     }
 }

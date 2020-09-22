@@ -2,7 +2,7 @@ import Foundation
 import Combine
 import Alamofire
 
-public final class DataRequestSubscription<S: Subscriber>: Subscription where S.Input == APIResponse, S.Failure == Error {
+public final class DataResponseSubscription<S: Subscriber>: Subscription where S.Input == APIResponse, S.Failure == Error {
     private let apiClient: APIClient
     private let apiRequest: APIRequest
     private var dataRequest: DataRequest?

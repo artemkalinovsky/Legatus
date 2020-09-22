@@ -37,9 +37,11 @@ final class KeyPathWrapper<T: Decodable>: Decodable {
         }
 
         /// Finds nested container and returns it and the key for object
-        func objectContainer(for keyPath: [String],
-                             in currentContainer: KeyedContainer,
-                             key currentKey: Key) throws -> (KeyedContainer, Key) {
+        func objectContainer(
+            for keyPath: [String],
+            in currentContainer: KeyedContainer,
+            key currentKey: Key
+        ) throws -> (KeyedContainer, Key) {
             guard !keyPath.isEmpty else { return (currentContainer, currentKey) }
             let container = try currentContainer.nestedContainer(keyedBy: Key.self, forKey: currentKey)
             let key = try getKey(from: keyPath)
