@@ -52,12 +52,12 @@ final class ApiClientTests: XCTestCase {
             if case let .success(apiVersion) = result {
                 XCTAssertEqual(apiVersion.value, expectedApiVersionValue)
             } else if case let .failure(error) = result {
-                 XCTAssertTrue(false, "Unexpected response: \(error).")
+                XCTAssertTrue(false, "Unexpected response: \(error).")
             }
             randomUserApiRequestExpectation.fulfill()
         }
 
-         wait(for: [randomUserApiRequestExpectation], timeout: 20.0)
+        wait(for: [randomUserApiRequestExpectation], timeout: 20.0)
     }
 
     func testParallelRequests() {
@@ -98,12 +98,12 @@ final class ApiClientTests: XCTestCase {
                 XCTAssertFalse(fetchedUsers.isEmpty)
                 XCTAssertTrue(fetchedUsers.count == expectedResultsCount)
             } else {
-                 XCTAssertTrue(false, "Unexpected response.")
+                XCTAssertTrue(false, "Unexpected response.")
             }
             randomUserApiRequestExpectation.fulfill()
         }
 
-         wait(for: [randomUserApiRequestExpectation], timeout: 20.0)
+        wait(for: [randomUserApiRequestExpectation], timeout: 20.0)
     }
 
     func testErrorResponse() {
@@ -183,13 +183,13 @@ final class ApiClientTests: XCTestCase {
         wait(for: [httpBinGetRequestExpectation], timeout: 10.0)
     }
 
-    func testRequestPublisherCancelation() {
+    func testResponsePublisherCancelation() {
         let httpBinApiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
         let httpBinGetRequest = HttpBinGetRequest()
         let httpBinGetRequestExpectation = XCTestExpectation(description: "Execute api request.")
 
         let cancelationToken = httpBinApiClient
-            .requestPublisher(request: httpBinGetRequest)
+            .responsePublisher(request: httpBinGetRequest)
             .handleEvents(receiveCancel: {
                 XCTAssertTrue(true)
                 httpBinGetRequestExpectation.fulfill()
@@ -251,7 +251,7 @@ final class ApiClientTests: XCTestCase {
         ("testAuthRequest", testAuthRequest),
         ("testMissedAccessToken", testMissedAccessToken),
         ("testRequestCancelation", testRequestCancelation),
-        ("testRequestPublisherCancelation", testRequestPublisherCancelation),
+        ("testResponsePublisherCancelation", testResponsePublisherCancelation),
         ("testCancelAllRequests", testCancelAllRequests)
     ]
 }

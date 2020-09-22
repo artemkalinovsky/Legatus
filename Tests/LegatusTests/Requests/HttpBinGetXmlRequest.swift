@@ -4,11 +4,11 @@ import Foundation
 final class HttpBinGetXmlRequest: DeserializeableRequest {
 
     var path: String {
-        return "xml"
+        "xml"
     }
 
     var deserializer: ResponseDeserializer<HttpBinXmlSlideshow> {
-        return XMLDeserializer<HttpBinXmlSlideshow>.singleObjectDeserializer()
+        XMLDeserializer<HttpBinXmlSlideshow>.singleObjectDeserializer()
     }
 
 }

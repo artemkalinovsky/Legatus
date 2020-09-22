@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 public enum JSONDeserializerError: Error {
     case jsonDeserializableInitFailed(String)
@@ -13,13 +13,13 @@ open class JSONDeserializer<T>: ResponseDeserializer<T> {
                     "Wrong result type: \(jsonObject.self). Expected \(T.self)"
                 )
             }
-            
+
             return object
         }
     }
-    
+
     public override func deserialize(data: Data) -> Future<T, Error> {
-        return Future { [weak self] promise in
+        Future { [weak self] promise in
             guard let self = self else { return }
             do {
                 let object = try self.transform(data)
@@ -32,12 +32,12 @@ open class JSONDeserializer<T>: ResponseDeserializer<T> {
 }
 
 extension JSONDeserializer where T: Decodable {
-    
+
     public class func singleObjectDeserializer(keyPath path: String...) -> JSONDeserializer<T> {
-        return JSONDeserializer { jsonDataObject in
+        JSONDeserializer { jsonDataObject in
             do {
                 let jsonDecoder = JSONDecoder()
-                
+
                 return try path.isEmpty
                     ? jsonDecoder.decode(T.self, from: jsonDataObject)
                     : jsonDecoder.decode(T.self, from: jsonDataObject, keyPath: path.joined(separator: "."))
@@ -48,12 +48,12 @@ extension JSONDeserializer where T: Decodable {
             }
         }
     }
-    
+
     public class func collectionDeserializer(keyPath path: String...) -> JSONDeserializer<[T]> {
-        return JSONDeserializer<[T]> { jsonDataObject in
+        JSONDeserializer<[T]> { jsonDataObject in
             do {
                 let jsonDecoder = JSONDecoder()
-                
+
                 return try path.isEmpty
                     ? jsonDecoder.decode([T].self, from: jsonDataObject)
                     : jsonDecoder.decode([T].self, from: jsonDataObject, keyPath: path.joined(separator: "."))
@@ -64,5 +64,5 @@ extension JSONDeserializer where T: Decodable {
             }
         }
     }
-    
+
 }

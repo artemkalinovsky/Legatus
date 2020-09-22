@@ -140,11 +140,11 @@ import Legatus
 final class UsersApiRequest: DeserializeableRequest {
 
     var path: String {
-        return "users"
+        "users"
     }
     
     var deserializer: ResponseDeserializer<[User]> {
-        return JSONDeserializer<User>.collectionDeserializer(keyPath: "results")
+        JSONDeserializer<User>.collectionDeserializer(keyPath: "results")
     }
 
 }
@@ -244,7 +244,7 @@ While working with SwiftUI, where most of UI updates based on *Combine* mechanis
     var subscriptions = Set<AnyCancellable>()
 
     apiClient
-         .requestPublisher(request: UsersApiRequest())
+         .responsePublisher(request: UsersApiRequest())
          .catch { _ in return Just([User]())}
          .assign(to: \.users, on: self)
          .store(in: &subscriptions)

@@ -11,7 +11,7 @@ final class RandomUserApiRequest: DeserializeableRequest {
     }
 
     var deserializer: ResponseDeserializer<[RandomUser]> {
-        return JSONDeserializer<RandomUser>.collectionDeserializer(keyPath: "results")
+        JSONDeserializer<RandomUser>.collectionDeserializer(keyPath: "results")
     }
 
     private let results: Int?

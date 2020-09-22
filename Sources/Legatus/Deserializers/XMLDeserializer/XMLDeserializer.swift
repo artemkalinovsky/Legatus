@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 import SWXMLHash
 
 public protocol XMLDeserializable {
@@ -16,7 +16,8 @@ open class XMLDeserializer<T>: ResponseDeserializer<T> {
             if let xmlObject = xmlObject as? T {
                 return xmlObject
             }
-            throw XMLDeserializerError.jsonDeserializableInitFailed("Wrong result type: \(xmlObject.self). Expected \(T.self)")
+            throw XMLDeserializerError.jsonDeserializableInitFailed(
+                "Wrong result type: \(xmlObject.self). Expected \(T.self)")
         }
     }
 
@@ -33,26 +34,28 @@ open class XMLDeserializer<T>: ResponseDeserializer<T> {
     }
 }
 
-public extension XMLDeserializer where T: XMLDeserializable {
+extension XMLDeserializer where T: XMLDeserializable {
 
-    class func singleObjectDeserializer(keyPath path: String...) -> XMLDeserializer<T> {
-        return XMLDeserializer { xmlDataObject in
+    public class func singleObjectDeserializer(keyPath path: String...) -> XMLDeserializer<T> {
+        XMLDeserializer { xmlDataObject in
             let xml = SWXMLHash.lazy(xmlDataObject)
             guard let deserializedObject = T(xmlIndexer: xml[path]) else {
-                throw XMLDeserializerError.jsonDeserializableInitFailed("Failed to create \(T.self) object.")
+                throw XMLDeserializerError.jsonDeserializableInitFailed(
+                    "Failed to create \(T.self) object.")
             }
             return deserializedObject
         }
     }
 
-    class func collectionDeserializer(keyPath path: String...) -> XMLDeserializer<[T]> {
-        return XMLDeserializer<[T]>(transform: { xmlDataObject in
+    public class func collectionDeserializer(keyPath path: String...) -> XMLDeserializer<[T]> {
+        XMLDeserializer<[T]>(transform: { xmlDataObject in
             let xml = SWXMLHash.lazy(xmlDataObject)
 
             let deserializedObjects = xml[path].all.map { T(xmlIndexer: $0) }
 
             if deserializedObjects.contains(where: { $0 == nil }) {
-                throw XMLDeserializerError.jsonDeserializableInitFailed("Failed to create array of \(T.self) objects.")
+                throw XMLDeserializerError.jsonDeserializableInitFailed(
+                    "Failed to create array of \(T.self) objects.")
             }
 
             return deserializedObjects.compactMap { $0 }
