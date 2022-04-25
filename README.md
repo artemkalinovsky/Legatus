@@ -40,12 +40,12 @@ Any contributions (pull requests, questions, propositions) are always welcome!ðŸ
 
 * #### Swift Package Manager
 
-You can use Xcode 11 SPM GUI: *File -> Swift Packages -> Add Package Dependency -> Pick 1.0.0 release (or main branch)*.
+You can use Xcode SPM GUI: *File -> Swift Packages -> Add Package Dependency -> Pick 2.0.0 release (or main branch)*.
 
 Or add the following to your `Package.swift` file:
 
 ``` swift
-.package(url: "https://github.com/artemkalinovsky/Legatus.git", .upToNextMajor(from: "1.0.0"))
+.package(url: "https://github.com/artemkalinovsky/Legatus.git", .upToNextMajor(from: "2.0.0"))
 ```
 
 and then specify `"Legatus"` as a dependency of the Target in which you wish to use Legatus.
