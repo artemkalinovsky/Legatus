@@ -25,19 +25,25 @@ public final class DataResponseSubscription<S: Subscriber>: Subscription where S
         }
 
         isRequestInProgress = true
-        dataRequest = apiClient.session.request(apiRequest.configurePath(baseUrl: apiClient.baseURL),
-                                                method: apiRequest.method,
-                                                parameters: apiRequest.parameters,
-                                                encoding: apiRequest.encoding,
-                                                headers: headers).response { [weak self] dataResponse in
-                                                    self?.isRequestInProgress = false
-                                                    guard let self = self else { return }
-                                                    guard let error = dataResponse.error else {
-                                                        _ = self.subscriber?.receive(dataResponse)
-                                                        self.subscriber?.receive(completion: .finished)
-                                                        return
-                                                    }
-                                                    self.subscriber?.receive(completion: .failure(error))
+        dataRequest = apiClient.session.request(
+            apiRequest.configurePath(baseUrl: apiClient.baseURL),
+            method: apiRequest.method,
+            parameters: apiRequest.parameters,
+            encoding: apiRequest.encoding,
+            headers: headers
+        )
+        .response { [weak self] dataResponse in
+            self?.isRequestInProgress = false
+
+            guard let self = self else { return }
+
+            guard let error = dataResponse.error else {
+                _ = self.subscriber?.receive(dataResponse)
+                self.subscriber?.receive(completion: .finished)
+                return
+            }
+
+            self.subscriber?.receive(completion: .failure(error))
         }
     }
 

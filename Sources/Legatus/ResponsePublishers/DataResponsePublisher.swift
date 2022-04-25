@@ -16,10 +16,12 @@ public struct DataResponsePublisher: Publisher {
 
   public func receive<S: Subscriber>(subscriber: S) where Failure == S.Failure, Output == S.Input {
     guard let apiClient = apiClient else { return }
+
     let dataRequestSubscription = DataResponseSubscription(
       subscriber: subscriber,
       apiClient: apiClient,
-      apiRequest: apiRequest)
+      apiRequest: apiRequest
+    )
 
     subscriber.receive(subscription: dataRequestSubscription)
   }

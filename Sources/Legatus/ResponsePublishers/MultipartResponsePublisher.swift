@@ -23,11 +23,14 @@ public struct MultipartResponsePublisher: Publisher {
 
     public func receive<S: Subscriber>(subscriber: S) where Failure == S.Failure, Output == S.Input {
         guard let apiClient = apiClient else { return }
-        let multipartRequestSubsription = MultipartResponseSubscription(subscriber: subscriber,
-                                                                       apiClient: apiClient,
-                                                                       apiRequest: apiRequest,
-                                                                       requestInputMultipartData: requestInputMultipartData,
-                                                                       uploadProgressObserver: uploadProgressObserver)
+
+        let multipartRequestSubsription = MultipartResponseSubscription(
+            subscriber: subscriber,
+            apiClient: apiClient,
+            apiRequest: apiRequest,
+            requestInputMultipartData: requestInputMultipartData,
+            uploadProgressObserver: uploadProgressObserver
+        )
 
         subscriber.receive(subscription: multipartRequestSubsription)
     }

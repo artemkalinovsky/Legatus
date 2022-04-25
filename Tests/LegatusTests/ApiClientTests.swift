@@ -235,6 +235,14 @@ final class ApiClientTests: XCTestCase {
         wait(for: [httpBinGetRequestExpectation1, httpBinGetRequestExpectation2], timeout: 10.0)
     }
 
+    func testValidAsyncGetRequest() async throws {
+        let httpBinApiClient = APIClient(baseURL: URL(string: "https://httpbin.org/")!)
+
+        let httpBinGetResponse = try await httpBinApiClient.executeRequest(request: HttpBinGetRequest())
+
+        XCTAssertEqual(httpBinGetResponse.url, "https://httpbin.org/get")
+    }
+
     static var allTests = [
         ("testValidGetRequest", testValidGetRequest),
         ("testParallelRequests", testParallelRequests),
@@ -246,6 +254,7 @@ final class ApiClientTests: XCTestCase {
         ("testMissedAccessToken", testMissedAccessToken),
         ("testRequestCancelation", testRequestCancelation),
         ("testResponsePublisherCancelation", testResponsePublisherCancelation),
-        ("testCancelAllRequests", testCancelAllRequests)
+        ("testCancelAllRequests", testCancelAllRequests),
+        ("testValidAsyncGetRequest", testValidAsyncGetRequest)
     ]
 }

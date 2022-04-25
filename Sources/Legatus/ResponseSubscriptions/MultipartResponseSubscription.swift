@@ -40,9 +40,11 @@ public final class MultipartResponseSubscription<S: Subscriber>: Subscription wh
             to: apiRequest.configurePath(baseUrl: apiClient.baseURL),
             method: apiRequest.method,
             headers: headers
-        ).uploadProgress { [weak self] progress in
+        )
+        .uploadProgress { [weak self] progress in
             self?.uploadProgressObserver?(progress)
-        }.responseData { [weak self] dataResponse in
+        }
+        .responseData { [weak self] dataResponse in
             self?.isRequestInProgress = false
             guard let error = dataResponse.error else {
                 _ = self?.subscriber?.receive(dataResponse)

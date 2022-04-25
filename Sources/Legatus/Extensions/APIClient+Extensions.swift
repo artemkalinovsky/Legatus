@@ -1,6 +1,8 @@
 import Combine
 import Foundation
 
+// MARK: - Combine support
+
 extension APIClient {
 
     public func responsePublisher<T>(
@@ -25,7 +27,8 @@ extension APIClient {
                     }
                 }
             }
-        }.eraseToAnyPublisher()
+        }
+        .eraseToAnyPublisher()
     }
 
     public func responsePublisher<T: DeserializeableRequest, U>(
@@ -48,7 +51,48 @@ extension APIClient {
                     }
                 }
             }
-        }.eraseToAnyPublisher()
+        }
+        .eraseToAnyPublisher()
     }
 
+}
+
+// MARK: - Swift Concurrency support
+
+extension APIClient {
+    public func executeRequest<T>(
+        request: APIRequest,
+        deserializer: ResponseDeserializer<T>,
+        retries: Int = 0,
+        uploadProgressObserver: ((Progress) -> Void)? = nil
+    ) async throws -> T {
+        try await withCheckedThrowingContinuation { continuation in
+            executeRequest(
+                request,
+                retries: retries,
+                deserializer: deserializer,
+                uploadProgressObserver: uploadProgressObserver
+            ) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+
+    
+    public func executeRequest<T: DeserializeableRequest, U>(
+        request: T,
+        retries: Int = 0,
+        uploadProgressObserver: ((Progress) -> Void)? = nil
+    ) async throws -> U where U == T.ResponseType {
+        try await withCheckedThrowingContinuation { continuation in
+            executeRequest(
+                request,
+                retries: retries,
+                deserializer: request.deserializer,
+                uploadProgressObserver: uploadProgressObserver
+            ) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
 }
