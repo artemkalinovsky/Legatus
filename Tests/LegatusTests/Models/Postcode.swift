@@ -1,11 +1,9 @@
 import Foundation
-import JASON
-@testable import Legatus
 
-struct Postcode: JSONDeserializable {
-    let value: String?
+struct Postcode: Decodable {
+    let postcode: String
 
-    init?(json: JSON) {
-        self.value = json.string
+    enum CodingKeys: String, CodingKey {
+        case postcode
     }
 }

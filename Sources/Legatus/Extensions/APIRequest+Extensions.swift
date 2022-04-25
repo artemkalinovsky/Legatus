@@ -3,31 +3,31 @@ import Alamofire
 
 public extension APIRequest {
     var fullPath: String? {
-        return nil
+        nil
     }
 
     var path: String {
-        return ""
+        ""
     }
 
     var method: Method {
-        return .get
+        .get
     }
 
     var parameters: [String: Any]? {
-        return nil
+        nil
     }
 
     func headers() throws -> [String: String] {
-        return [:]
+        [:]
     }
 
     var encoding: ParameterEncoding {
-        return method == .get ? URLEncoding.default : JSONEncoding.default
+        method == .get ? URLEncoding.default : JSONEncoding.default
     }
 
     var multipartFormData: [String: URL]? {
-        return nil
+        nil
     }
 
     func configureHTTPHeaders() -> Swift.Result<HTTPHeaders, Error> {

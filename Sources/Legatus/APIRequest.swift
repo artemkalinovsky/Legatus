@@ -34,7 +34,7 @@ public protocol AuthRequest: APIRequest {
 public extension APIRequest where Self: AuthRequest {
 
     var accessTokenPrefix: String {
-        return "Bearer"
+        "Bearer"
     }
 
     func headers() throws -> [String: String] {

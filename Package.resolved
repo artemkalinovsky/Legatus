@@ -11,15 +11,6 @@
         }
       },
       {
-        "package": "JASON",
-        "repositoryURL": "https://github.com/delba/JASON.git",
-        "state": {
-          "branch": "master",
-          "revision": "47d06b3f650867afd0a1fa8379d5b590855246db",
-          "version": null
-        }
-      },
-      {
         "package": "SWXMLHash",
         "repositoryURL": "https://github.com/drmohundro/SWXMLHash.git",
         "state": {

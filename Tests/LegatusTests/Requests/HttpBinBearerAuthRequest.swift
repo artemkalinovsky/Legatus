@@ -6,10 +6,10 @@ final class HttpBinBearerAuthRequest: AuthRequest, DeserializeableRequest {
     var accessToken: String?
 
     var path: String {
-        return "bearer"
+        "bearer"
     }
 
-    var deserializer: ResponseDeserializer<HttbinBearerAuthResponse> {
-        return JSONDeserializer<HttbinBearerAuthResponse>.singleObjectDeserializer()
+    var deserializer: ResponseDeserializer<HttpBinBearerAuthResponse> {
+        JSONDeserializer<HttpBinBearerAuthResponse>.singleObjectDeserializer()
     }
 }

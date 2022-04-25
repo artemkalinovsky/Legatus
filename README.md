@@ -1,4 +1,5 @@
 # Legatus 🏇
+
 A legatus (anglicised as legate) was a high-ranking Roman military officer in the Roman Army, equivalent to a modern high-ranking general officer. Initially used to delegate power, the term became formalised under Augustus as the officer in command of a legion.
 Legatus was also a term for an ambassador of the Roman Republic who was appointed by the senate for a mission (legatio) to a foreign nation, as well as for ambassadors who came to Rome from other countries.
 
@@ -13,12 +14,12 @@ Luckily, *Legatus* was implemented with `Combine` framework and have couple of f
 
 ### Some awesome features of Legatus🌟:
 
-- SOLID design (e.g.: `APIClient` don't stores and configures requests, each request is encapsulated in separate entity).
-- Easy retrying of requests.
-- Elegant and flexible canceling of requests.
-- ***SwiftUI*** compatibility out-of-the-box.
-- Support JSON and XML response formats.
-- Combine-driven reachability tracking.
+* SOLID design (e.g.: `APIClient` don't stores and configures requests, each request is encapsulated in separate entity).
+* Easy retrying of requests.
+* Elegant and flexible canceling of requests.
+* ***SwiftUI*** compatibility out-of-the-box.
+* Support JSON and XML response formats.
+* Combine-driven reachability tracking.
 
 *Legatus* is inspired by [Moya](https://github.com/Moya/Moya).
 
@@ -27,31 +28,30 @@ Luckily, *Legatus* was implemented with `Combine` framework and have couple of f
 I consider it's ready for production use.<br/>
 Any contributions (pull requests, questions, propositions) are always welcome!😃
 
-
 ## Requirements 📝 
-- Swift 5.1+
-- macOS 10.15+
-- iOS 13+
-- tvOS 13+
-- watchOS 5+
 
+* Swift 5.1+
+* macOS 10.15+
+* iOS 13+
+* tvOS 13+
+* watchOS 5+
 
 ## Installation 📦 
 
-- #### Swift Package Manager
+* #### Swift Package Manager
 
-You can use Xcode 11 SPM GUI: *File -> Swift Packages -> Add Package Dependency -> Pick master branch*.
+You can use Xcode 11 SPM GUI: *File -> Swift Packages -> Add Package Dependency -> Pick 1.0.0 release (or main branch)*.
 
 Or add the following to your `Package.swift` file:
 
-```swift
-.package(url: "https://github.com/artemkalinovsky/Legatus.git", .branch("master"))
+``` swift
+.package(url: "https://github.com/artemkalinovsky/Legatus.git", .upToNextMajor(from: "1.0.0"))
 ```
 
 and then specify `"Legatus"` as a dependency of the Target in which you wish to use Legatus.
-Here's an example `PackageDescription`:
+Here's an example `PackageDescription` :
 
-```swift
+``` swift
 // swift-tools-version:5.1
 import PackageDescription
 
@@ -63,7 +63,7 @@ let package = Package(
             targets: ["MyPackage"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/artemkalinovsky/Legatus.git", .branch("master"))
+        .package(url: "https://github.com/artemkalinovsky/Legatus.git", .upToNextMajor(from: "1.0.0"))
     ],
     targets: [
         .target(
@@ -76,7 +76,8 @@ let package = Package(
 ## Basic Usage 🧑‍💻
 
 Let's suppose we want to fetch list of users from JSON and response is look like this:
-```json
+
+``` json
 { 
    "results":[ 
       { 
@@ -90,58 +91,68 @@ Let's suppose we want to fetch list of users from JSON and response is look like
 }
 ```
 
-- #### Setup
+* #### Setup
 
-1. Create `APIClient`:
-```swift
+1. Create `APIClient` :
+
+``` swift
     let apiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
 ```
 
 2. Create response model:
-```swift
+
+``` swift
 import Foundation
-import JASON
 import Legatus
 
-final class User: JSONDeserializable {
-    let firstName: String
-    let lastName: String
-    let email: String
+final class User: Decodable {
+    let firstName: String?
+    let lastName: String?
+    let email: String?
 
-    init?(json: JSON) {
-        guard let firstName = json["name"]["first"].string,
-            let lastName = json["name"]["last"].string,
-            let email = json["email"].string else {
-                return nil
-        }
+    enum CodingKeys: String, CodingKey {
+        case name
+        case email
+    }
 
-        self.firstName = firstName
-        self.lastName = lastName
-        self.email = email
+    enum NameKeys: String, CodingKey {
+        case firstName = "first"
+        case lastName = "last"
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        email = try values.decodeIfPresent(String.self, forKey: .email)
+
+        let name = try values.nestedContainer(keyedBy: NameKeys.self, forKey: .name)
+        firstName = try name.decodeIfPresent(String.self, forKey: .firstName)
+        lastName = try name.decodeIfPresent(String.self, forKey: .lastName)
     }
 }
 ```
 
 3. Create request with endpoint path and desired reponse deserializer:
-```swift
+
+``` swift
 import Foundation
 import Legatus
 
 final class UsersApiRequest: DeserializeableRequest {
 
     var path: String {
-        return "users"
+        "users"
     }
     
     var deserializer: ResponseDeserializer<[User]> {
-        return JSONDeserializer<User>.objectsArrayDeserializer(keyPath: "results")
+        JSONDeserializer<User>.collectionDeserializer(keyPath: "results")
     }
 
 }
 ```
 
-- #### Perfrom created request
-```swift
+* #### Perfrom created request
+
+``` swift
     apiClient.executeRequest(request: UsersApiRequest()) { result in }
 ```
 
@@ -149,92 +160,67 @@ Voilà!🧑‍🎨
 
 ## Advanced Usage 🤓💻
 
-- #### Working with CoreData models.
-To deserialize your response right to CoreData `NSManagedObject`, just call designated initializer firstly:
-```swift
-@objc(CoreDataObject)
-public class CoreDataObject: NSManagedObject, JSONDeserializable {
+* #### Working with CoreData models.
 
-    public required init?(json: JSON) {
-        super.init(entity: /*provide NSEntityDescription*/, insertInto: /*provide NSManagedObjectContext*/)
-        stringProperty = json.stringValue
+To deserialize your response right to CoreData `NSManagedObject` , just call designated initializer firstly:
+
+``` swift
+import Foundation
+import CoreData
+import Legatus
+
+@objc(CoreDataObject)
+public class CoreDataObject: NSManagedObject, Decodable {
+
+    required convenience public init(from decoder: Decoder) throws {
+        self.init(context: NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType))
+
+        //TODO: implement decoding
     }
 
 }
 ```
 
-- #### Working with [Realm](https://github.com/realm/realm-cocoa) models.
+* #### Working with [Realm](https://github.com/realm/realm-cocoa) models.
+
 To deserialize your response right to Realm `Object` subclass:
-```swift
+
+``` swift
 import Foundation
 import RealmSwift
-import JASON
 import Legatus
 
-final class RealmObject: Object, JSONDeserializable {
+final class RealmObject: Object, Decodable {
 
     @objc dynamic var name = ""
-
-    convenience required init?(json: JSON) {
-        self.init()
-        name = json["name"].stringValue
-    }
 
     required init() {
         super.init()
     }
-}
-```
 
-- #### Using keypath chaining in response deserializer
-```json
-{ 
-   "user":{ 
-      "name":{ 
-         "first":"brad",
-         "last":"gibson"
-      }
-   }
-}
-```
-```swift
-import Foundation
-import JASON
-import Legatus
+    convenience init(from decoder: Decoder) throws {
+        self.init()
 
-final class UserName: JSONDeserializable {
-    let firstName: String?
-    let lastName: String?
-
-    init?(json: JSON) {
-        self.firstName = json["first"].string
-        self.lastName = json["last"].string
+        //TODO: implement decoding
     }
 }
 ```
-```swift
-import Foundation
-import Legatus
 
-final class UserNameApiRequest: DeserializeableRequest {
-    
-    var deserializer: ResponseDeserializer<UserName> {
-        return JSONDeserializer<UserName>.singleObjectDeserializer(keyPath: "user", "name")
-    }
-
-}
-```
 Same functionality available for `XMLDeserializer` too.
 
-- #### Retrying requests
+* #### Retrying requests
+
 If you want to retry previously failed request, just provide count of desiried retry times:
-```swift
+
+``` swift
     apiClient.executeRequest(request: UsersApiRequest(), retries: 3) { result in }
 ```
 
-- #### Request cancelation
+* #### Request cancelation
+
 To cancel certain request, you have to store it's cancelation token and call `cancel()` method.
-```swift
+
+``` swift
     let cancelationToken = apiClient.executeRequest(request: UsersApiRequest()) { result in }
     
     DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
@@ -243,7 +229,8 @@ To cancel certain request, you have to store it's cancelation token and call `ca
 ```
 
 Also, you can cancel all active requests:
-```swift
+
+``` swift
     apiClient.cancelAllRequests()
 ```
 
@@ -251,12 +238,13 @@ Also, you can cancel all active requests:
 
 While working with SwiftUI, where most of UI updates based on *Combine* mechanisms under the hood, it's very convenient to get
 `Publisher` as request result for future transformations and assigns:
-```swift
+
+``` swift
     @Published var users = [User]()
     var subscriptions = Set<AnyCancellable>()
 
     apiClient
-         .requestPublisher(request: UsersApiRequest())
+         .responsePublisher(request: UsersApiRequest())
          .catch { _ in return Just([User]())}
          .assign(to: \.users, on: self)
          .store(in: &subscriptions)
@@ -264,11 +252,10 @@ While working with SwiftUI, where most of UI updates based on *Combine* mechanis
 
 ## Credits 👏
 
-- [Moya](https://github.com/Moya/Moya)
-- [Combine Community](https://github.com/CombineCommunity)
-- @delba for [JASON](https://github.com/delba/JASON)
-- @drmohundro for [SWXMLHash](https://github.com/drmohundro/SWXMLHash)
-
+* [Moya](https://github.com/Moya/Moya)
+* [Combine Community](https://github.com/CombineCommunity)
+* @0111b for [JSONDecoder-Keypath](https://github.com/0111b/JSONDecoder-Keypath)
+* @drmohundro for [SWXMLHash](https://github.com/drmohundro/SWXMLHash)
 
 ## License 📄
 

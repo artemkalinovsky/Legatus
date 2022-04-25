@@ -2,7 +2,7 @@ import Foundation
 import Combine
 import Alamofire
 
-public final class MultipartRequestSubscription<S: Subscriber>: Subscription where S.Input == APIResponse, S.Failure == Error {
+public final class MultipartResponseSubscription<S: Subscriber>: Subscription where S.Input == APIResponse, S.Failure == Error {
     private let apiClient: APIClient
     private let apiRequest: APIRequest
     private let requestInputMultipartData: [String: URL]

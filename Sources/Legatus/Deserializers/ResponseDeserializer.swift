@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 open class ResponseDeserializer<T> {
     typealias Transform = ((Data) throws -> T)
@@ -17,7 +17,7 @@ open class ResponseDeserializer<T> {
 
 open class EmptyDeserializer: ResponseDeserializer<Void> {
     public override func deserialize(data: Data) -> Future<Void, Error> {
-        return Future { promise in
+        Future { promise in
             promise(.success(()))
         }
     }
@@ -25,7 +25,7 @@ open class EmptyDeserializer: ResponseDeserializer<Void> {
 
 open class RawDataDeserializer: ResponseDeserializer<Data> {
     public override func deserialize(data: Data) -> Future<Data, Error> {
-        return Future { promise in
+        Future { promise in
             promise(.success(data))
         }
     }

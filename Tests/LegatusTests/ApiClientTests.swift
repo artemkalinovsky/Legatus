@@ -10,8 +10,8 @@ final class ApiClientTests: XCTestCase {
 
         httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
             if case let .success(httpBinGetResponse) = result {
-                XCTAssertEqual(httpBinGetResponse.urlString, "https://httpbin.org/get")
-            } else if case let .failure(error) = result{
+                XCTAssertEqual(httpBinGetResponse.url, "https://httpbin.org/get")
+            } else if case let .failure(error) = result {
                 XCTAssertTrue(false, "Unexpected response. Error: \(error)")
             }
             httpBinGetRequestExpectation.fulfill()
@@ -32,7 +32,7 @@ final class ApiClientTests: XCTestCase {
                 XCTAssertEqual(httpBinSlideshow.author, "Yours Truly")
                 XCTAssertFalse(httpBinSlideshow.slides.isEmpty)
                 XCTAssertTrue(httpBinSlideshow.slides.count == expectedSlidesCount)
-            } else if case let .failure(error) = result{
+            } else if case let .failure(error) = result {
                 XCTAssertTrue(false, "Unexpected response. Error: \(error)")
             }
             httpBinGetRequestExpectation.fulfill()
@@ -52,12 +52,12 @@ final class ApiClientTests: XCTestCase {
             if case let .success(apiVersion) = result {
                 XCTAssertEqual(apiVersion.value, expectedApiVersionValue)
             } else if case let .failure(error) = result {
-                 XCTAssertTrue(false, "Unexpected response: \(error).")
+                XCTAssertTrue(false, "Unexpected response: \(error).")
             }
             randomUserApiRequestExpectation.fulfill()
         }
 
-         wait(for: [randomUserApiRequestExpectation], timeout: 10.0)
+        wait(for: [randomUserApiRequestExpectation], timeout: 20.0)
     }
 
     func testParallelRequests() {
@@ -68,8 +68,8 @@ final class ApiClientTests: XCTestCase {
 
         httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
             if case let .success(httpBinGetResponse) = result {
-                XCTAssertEqual(httpBinGetResponse.urlString, "https://httpbin.org/get")
-            } else if case let .failure(error) = result{
+                XCTAssertEqual(httpBinGetResponse.url, "https://httpbin.org/get")
+            } else if case let .failure(error) = result {
                 XCTAssertTrue(false, "Unexpected response. Error: \(error)")
             }
             firstRequestExpectation.fulfill()
@@ -77,8 +77,8 @@ final class ApiClientTests: XCTestCase {
 
         httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
             if case let .success(httpBinGetResponse) = result {
-                XCTAssertEqual(httpBinGetResponse.urlString, "https://httpbin.org/get")
-            } else if case let .failure(error) = result{
+                XCTAssertEqual(httpBinGetResponse.url, "https://httpbin.org/get")
+            } else if case let .failure(error) = result {
                 XCTAssertTrue(false, "Unexpected response. Error: \(error)")
             }
             secondRequestExpectation.fulfill()
@@ -98,12 +98,12 @@ final class ApiClientTests: XCTestCase {
                 XCTAssertFalse(fetchedUsers.isEmpty)
                 XCTAssertTrue(fetchedUsers.count == expectedResultsCount)
             } else {
-                 XCTAssertTrue(false, "Unexpected response.")
+                XCTAssertTrue(false, "Unexpected response.")
             }
             randomUserApiRequestExpectation.fulfill()
         }
 
-         wait(for: [randomUserApiRequestExpectation], timeout: 10.0)
+        wait(for: [randomUserApiRequestExpectation], timeout: 20.0)
     }
 
     func testErrorResponse() {
@@ -112,7 +112,7 @@ final class ApiClientTests: XCTestCase {
         let apiRequestExpectation = XCTestExpectation(description: "Execute api request.")
 
         apiClient.executeRequest(request: randomUserApiRequest) { result in
-            if case .failure(_) = result {
+            if case .failure = result {
                 XCTAssertTrue(true)
             } else {
                 XCTAssertTrue(false, "Unexpected success response.")
@@ -132,7 +132,7 @@ final class ApiClientTests: XCTestCase {
 
         apiClient.executeRequest(request: testAuthRequest) { result in
             if case let .success(httpBinBearerAuthResponse) = result {
-                XCTAssertTrue(httpBinBearerAuthResponse.isAuthenticated)
+                XCTAssertTrue(httpBinBearerAuthResponse.authenticated)
                 XCTAssertEqual(httpBinBearerAuthResponse.token, accessToken)
             } else {
                 XCTAssertTrue(false, "Unexpected success response.")
@@ -168,7 +168,7 @@ final class ApiClientTests: XCTestCase {
         let cancelationToken = httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
             if case let .failure(error) = result, let apiClientError = error as? APIClientError {
                 XCTAssertTrue(apiClientError == APIClientError.requestCancelled)
-            } else if case .success(_) = result {
+            } else if case .success = result {
                 XCTAssertTrue(true)
             } else {
                 XCTAssertTrue(false, "Unexpected success response.")
@@ -183,13 +183,13 @@ final class ApiClientTests: XCTestCase {
         wait(for: [httpBinGetRequestExpectation], timeout: 10.0)
     }
 
-    func testRequestPublisherCancelation() {
+    func testResponsePublisherCancelation() {
         let httpBinApiClient = APIClient(baseURL: URL(string: "https://webservice.com/api/")!)
         let httpBinGetRequest = HttpBinGetRequest()
         let httpBinGetRequestExpectation = XCTestExpectation(description: "Execute api request.")
 
         let cancelationToken = httpBinApiClient
-            .requestPublisher(request: httpBinGetRequest)
+            .responsePublisher(request: httpBinGetRequest)
             .handleEvents(receiveCancel: {
                 XCTAssertTrue(true)
                 httpBinGetRequestExpectation.fulfill()
@@ -215,7 +215,7 @@ final class ApiClientTests: XCTestCase {
         httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
             if case let .failure(error) = result, let apiClientError = error as? APIClientError {
                 XCTAssertTrue(apiClientError == APIClientError.requestCancelled)
-            } else if case .success(_) = result {
+            } else if case .success = result {
                 XCTAssertTrue(true)
             } else {
                 XCTAssertTrue(false, "Unexpected success response.")
@@ -226,7 +226,7 @@ final class ApiClientTests: XCTestCase {
         httpBinApiClient.executeRequest(request: httpBinGetRequest) { result in
             if case let .failure(error) = result, let apiClientError = error as? APIClientError {
                 XCTAssertTrue(apiClientError == APIClientError.requestCancelled)
-            } else if case .success(_) = result {
+            } else if case .success = result {
                 XCTAssertTrue(true)
             } else {
                 XCTAssertTrue(false, "Unexpected success response.")
@@ -251,7 +251,7 @@ final class ApiClientTests: XCTestCase {
         ("testAuthRequest", testAuthRequest),
         ("testMissedAccessToken", testMissedAccessToken),
         ("testRequestCancelation", testRequestCancelation),
-        ("testRequestPublisherCancelation", testRequestPublisherCancelation),
+        ("testResponsePublisherCancelation", testResponsePublisherCancelation),
         ("testCancelAllRequests", testCancelAllRequests)
     ]
 }

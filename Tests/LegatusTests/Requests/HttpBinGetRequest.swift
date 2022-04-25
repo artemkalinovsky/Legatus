@@ -4,11 +4,11 @@ import Foundation
 final class HttpBinGetRequest: DeserializeableRequest {
 
     var path: String {
-        return "get"
+        "get"
     }
-    
+
     var deserializer: ResponseDeserializer<HttpBinGetResponse> {
-        return JSONDeserializer<HttpBinGetResponse>.singleObjectDeserializer()
+        JSONDeserializer<HttpBinGetResponse>.singleObjectDeserializer()
     }
 
 }
