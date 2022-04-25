@@ -20,6 +20,7 @@ Luckily, *Legatus* was implemented with `Combine` framework and have couple of f
 * Reachability tracking.
 * Support JSON and XML response formats.
 * ***Combine*** extension.
+* ***Swift Concurrency*** support.
 
 *Legatus* is inspired by [Moya](https://github.com/Moya/Moya).
 
@@ -248,6 +249,16 @@ While working with SwiftUI, where most of UI updates based on *Combine* mechanis
          .catch { _ in return Just([User]())}
          .assign(to: \.users, on: self)
          .store(in: &subscriptions)
+```
+
+## Swift Concurrency Extension 🚦
+``` swift
+    let httpBinApiClient = APIClient(baseURL: URL(string: "https://httpbin.org/")!)
+    do {
+        let httpBinGetResponse = try await httpBinApiClient.executeRequest(request: HttpBinGetRequest())
+    } catch {
+        // handle error
+    }
 ```
 
 ## Apps using Legatus 📱
