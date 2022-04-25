@@ -38,7 +38,7 @@ extension XMLDeserializer where T: XMLDeserializable {
 
     public class func singleObjectDeserializer(keyPath path: String...) -> XMLDeserializer<T> {
         XMLDeserializer { xmlDataObject in
-            let xml = SWXMLHash.lazy(xmlDataObject)
+            let xml = XMLHash.lazy(xmlDataObject)
             guard let deserializedObject = T(xmlIndexer: xml[path]) else {
                 throw XMLDeserializerError.jsonDeserializableInitFailed(
                     "Failed to create \(T.self) object.")
@@ -49,7 +49,7 @@ extension XMLDeserializer where T: XMLDeserializable {
 
     public class func collectionDeserializer(keyPath path: String...) -> XMLDeserializer<[T]> {
         XMLDeserializer<[T]>(transform: { xmlDataObject in
-            let xml = SWXMLHash.lazy(xmlDataObject)
+            let xml = XMLHash.lazy(xmlDataObject)
 
             let deserializedObjects = xml[path].all.map { T(xmlIndexer: $0) }
 

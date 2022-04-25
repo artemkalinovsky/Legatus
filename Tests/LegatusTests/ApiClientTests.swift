@@ -176,9 +176,7 @@ final class ApiClientTests: XCTestCase {
             httpBinGetRequestExpectation.fulfill()
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
-            cancelationToken.cancel()
-        }
+        cancelationToken.cancel()
 
         wait(for: [httpBinGetRequestExpectation], timeout: 10.0)
     }
@@ -199,9 +197,7 @@ final class ApiClientTests: XCTestCase {
                   receiveValue: { _ in
             })
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
-            cancelationToken.cancel()
-        }
+        cancelationToken.cancel()
 
         wait(for: [httpBinGetRequestExpectation], timeout: 10.0)
     }
@@ -234,10 +230,8 @@ final class ApiClientTests: XCTestCase {
             httpBinGetRequestExpectation2.fulfill()
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
-            httpBinApiClient.cancelAllRequests()
-        }
-
+        httpBinApiClient.cancelAllRequests()
+        
         wait(for: [httpBinGetRequestExpectation1, httpBinGetRequestExpectation2], timeout: 10.0)
     }
 
