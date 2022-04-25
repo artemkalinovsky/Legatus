@@ -8,7 +8,7 @@ public enum APIClientError: Error, Equatable {
 
 open class APIClient {
     let baseURL: URL
-    let manager: Session
+    let session = Session.default
 
     private let deserializationQueue = DispatchQueue(label: "DeserializationQueue",
                                                      qos: .default,
@@ -17,18 +17,7 @@ open class APIClient {
     private var requestSubscriptions = Set<AnyCancellable>()
 
     public init(baseURL: URL) {
-        let configuration: URLSessionConfiguration = {
-            let identifier = "URL Session for \(baseURL.absoluteString). Id: \(UUID().uuidString)"
-            //FIXME: - Alamofire does not support background URLSessionConfigurations.
-            /*
-             * https://github.com/Alamofire/Alamofire/issues/2233
-             * https://github.com/Alamofire/Alamofire/issues/2743
-             */
-            let configuration = URLSessionConfiguration.background(withIdentifier: identifier)
-            return configuration
-        }()
         self.baseURL = baseURL
-        manager = Session(configuration: configuration)
     }
 
     @discardableResult public func executeRequest<T>(_ request: APIRequest,
@@ -36,11 +25,15 @@ open class APIClient {
                                                      deserializer: ResponseDeserializer<T>,
                                                      uploadProgressObserver: ((Progress) -> Void)? = nil,
                                                      completion: @escaping (Swift.Result<T, Error>) -> Void) -> AnyCancellable {
+        let requestPublisher = request.multipartFormData == nil
+        ? requestResponsePublisher(request)
+        : multipartRequestResponsePublisher(
+            request,
+            requestInputMultipartData: request.multipartFormData!,
+            uploadProgressObserver: uploadProgressObserver
+        )
 
-        let cancellableToken = (request.multipartFormData == nil ?
-            requestResponsePublisher(request) : multipartRequestResponsePublisher(request,
-                                                                                  requestInputMultipartData: request.multipartFormData!,
-                                                                                  uploadProgressObserver: uploadProgressObserver))
+        let cancellableToken = requestPublisher
             .retry(retries)
             .handleEvents(receiveCancel: {
                 completion(.failure(APIClientError.requestCancelled))
@@ -49,33 +42,40 @@ open class APIClient {
             .subscribe(on: deserializationQueue)
             .flatMap { deserializer.deserialize(data: $0) }
             .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { receivedCompletion in
-                if case let .failure(error) = receivedCompletion {
-                    completion(.failure(error))
+            .sink(
+                receiveCompletion: { receivedCompletion in
+                    if case let .failure(error) = receivedCompletion {
+                        completion(.failure(error))
+                    }
+                },
+                receiveValue: { value in
+                    completion(.success(value))
                 }
-            }, receiveValue: { value in
-                completion(.success(value))
-            })
+            )
 
         cancellableToken.store(in: &requestSubscriptions)
 
         return cancellableToken
     }
 
-    @discardableResult public func executeRequest<T: DeserializeableRequest, U>(request: T,
-                                                                                retries: Int = 0,
-                                                                                uploadProgressObserver: ((Progress) -> Void)? = nil,
-                                                                                completion: @escaping (Swift.Result<U, Error>) -> Void) -> AnyCancellable where U == T.ResponseType {
-        executeRequest(request,
-                       retries: retries,
-                       deserializer: request.deserializer,
-                       uploadProgressObserver: uploadProgressObserver,
-                       completion: completion)
+    @discardableResult public func executeRequest<T: DeserializeableRequest, U>(
+        request: T,
+        retries: Int = 0,
+        uploadProgressObserver: ((Progress) -> Void)? = nil,
+        completion: @escaping (Swift.Result<U, Error>) -> Void
+    ) -> AnyCancellable where U == T.ResponseType {
+        executeRequest(
+            request,
+            retries: retries,
+            deserializer: request.deserializer,
+            uploadProgressObserver: uploadProgressObserver,
+            completion: completion
+        )
     }
 
     public func cancelAllRequests() {
         requestSubscriptions.forEach { $0.cancel() }
-        manager.session.getTasksWithCompletionHandler { dataTasks, uploadTasks, downloadTasks in
+        session.session.getTasksWithCompletionHandler { dataTasks, uploadTasks, downloadTasks in
             dataTasks.forEach { $0.cancel() }
             uploadTasks.forEach { $0.cancel() }
             downloadTasks.forEach { $0.cancel() }
@@ -83,7 +83,7 @@ open class APIClient {
     }
 
     private func handle(apiResponse: APIResponse) -> AnyPublisher<Data, Error> {
-        return Future { promise in
+        Future { promise in
             guard let statusCode = apiResponse.httpUrlResponse?.statusCode else {
                 promise(.failure(APIClientError.responseStatusCodeIsNil))
                 return
@@ -96,13 +96,15 @@ open class APIClient {
             let responseData = apiResponse.responseData ?? Data(bytes: &success,
                                                                 count: MemoryLayout.size(ofValue: success))
             promise(.success(responseData))
-        }.eraseToAnyPublisher()
+        }
+        .eraseToAnyPublisher()
     }
 
     private func requestResponsePublisher(_ request: APIRequest) -> AnyPublisher<APIResponse, Error> {
         Deferred<DataResponsePublisher> { [weak self] in
             DataResponsePublisher(apiClient: self, apiRequest: request)
-        }.eraseToAnyPublisher()
+        }
+        .eraseToAnyPublisher()
     }
 
     private func multipartRequestResponsePublisher(_ request: APIRequest,
@@ -113,6 +115,7 @@ open class APIClient {
                                        apiRequest: request,
                                        requestInputMultipartData: requestInputMultipartData,
                                        uploadProgressObserver: uploadProgressObserver)
-        }.eraseToAnyPublisher()
+        }
+        .eraseToAnyPublisher()
     }
 }

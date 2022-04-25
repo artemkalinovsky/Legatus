@@ -33,7 +33,7 @@ public final class MultipartResponseSubscription<S: Subscriber>: Subscription wh
         }
 
         isRequestInProgress = true
-        uploadRequest = apiClient.manager.upload(
+        uploadRequest = apiClient.session.upload(
             multipartFormData: { [weak self] multipartFormData in
                 self?.requestInputMultipartData.forEach { multipartFormData.append($0.value, withName: $0.key) }
             },

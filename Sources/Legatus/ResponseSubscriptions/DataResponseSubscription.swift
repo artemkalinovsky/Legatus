@@ -25,7 +25,7 @@ public final class DataResponseSubscription<S: Subscriber>: Subscription where S
         }
 
         isRequestInProgress = true
-        dataRequest = apiClient.manager.request(apiRequest.configurePath(baseUrl: apiClient.baseURL),
+        dataRequest = apiClient.session.request(apiRequest.configurePath(baseUrl: apiClient.baseURL),
                                                 method: apiRequest.method,
                                                 parameters: apiRequest.parameters,
                                                 encoding: apiRequest.encoding,
