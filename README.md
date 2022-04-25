@@ -250,6 +250,10 @@ While working with SwiftUI, where most of UI updates based on *Combine* mechanis
          .store(in: &subscriptions)
 ```
 
+# Apps using PinPlace 📱
+
+- [PinPlace](https://apps.apple.com/ua/app/pinplace/id1571349149)
+
 ## Credits 👏
 
 * [Moya](https://github.com/Moya/Moya)
