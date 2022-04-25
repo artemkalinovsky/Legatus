@@ -17,9 +17,9 @@ Luckily, *Legatus* was implemented with `Combine` framework and have couple of f
 * SOLID design (e.g.: `APIClient` don't stores and configures requests, each request is encapsulated in separate entity).
 * Easy retrying of requests.
 * Elegant and flexible canceling of requests.
-* ***SwiftUI*** compatibility out-of-the-box.
+* Reachability tracking.
 * Support JSON and XML response formats.
-* Combine-driven reachability tracking.
+* ***Combine*** extension.
 
 *Legatus* is inspired by [Moya](https://github.com/Moya/Moya).
 
@@ -30,11 +30,11 @@ Any contributions (pull requests, questions, propositions) are always welcome!�
 
 ## Requirements 📝 
 
-* Swift 5.1+
-* macOS 10.15+
-* iOS 13+
-* tvOS 13+
-* watchOS 5+
+* Swift 5.5+
+* macOS 12+
+* iOS 15+
+* tvOS 15+
+* watchOS 8+
 
 ## Installation 📦 
 
@@ -52,7 +52,7 @@ and then specify `"Legatus"` as a dependency of the Target in which you wish to 
 Here's an example `PackageDescription` :
 
 ``` swift
-// swift-tools-version:5.1
+// swift-tools-version:5.5
 import PackageDescription
 
 let package = Package(
@@ -63,7 +63,7 @@ let package = Package(
             targets: ["MyPackage"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/artemkalinovsky/Legatus.git", .upToNextMajor(from: "1.0.0"))
+        .package(url: "https://github.com/artemkalinovsky/Legatus.git", .upToNextMajor(from: "2.0.0"))
     ],
     targets: [
         .target(
