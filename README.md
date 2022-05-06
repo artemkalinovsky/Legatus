@@ -1,3 +1,5 @@
+![swift workflow](https://github.com/artemkalinovsky/Legatus/actions/workflows/swift.yml/badge.svg) 
+
 # Legatus 🏇
 
 A legatus (anglicised as legate) was a high-ranking Roman military officer in the Roman Army, equivalent to a modern high-ranking general officer. Initially used to delegate power, the term became formalised under Augustus as the officer in command of a legion.
