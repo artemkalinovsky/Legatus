@@ -48,7 +48,7 @@ You can use Xcode SPM GUI: *File -> Swift Packages -> Add Package Dependency -> 
 Or add the following to your `Package.swift` file:
 
 ``` swift
-.package(url: "https://github.com/artemkalinovsky/Legatus.git", from: Version(from: "2.0.1"))
+.package(url: "https://github.com/artemkalinovsky/Legatus.git", exact: Version("2.0.1"))
 ```
 
 and then specify `"Legatus"` as a dependency of the Target in which you wish to use Legatus.
@@ -66,7 +66,7 @@ let package = Package(
             targets: ["MyPackage"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/artemkalinovsky/Legatus.git", from: Version(from: "2.0.1"))
+        .package(url: "https://github.com/artemkalinovsky/Legatus.git", exact: Version("2.0.1")
     ],
     targets: [
         .target(
