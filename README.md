@@ -33,7 +33,7 @@ Any contributions (pull requests, questions, propositions) are always welcome!ðŸ
 
 ## Requirements ðŸ“ 
 
-* Swift 5.5+
+* Swift 5.6+
 * macOS 12+
 * iOS 15+
 * tvOS 15+
@@ -48,14 +48,14 @@ You can use Xcode SPM GUI: *File -> Swift Packages -> Add Package Dependency -> 
 Or add the following to your `Package.swift` file:
 
 ``` swift
-.package(url: "https://github.com/artemkalinovsky/Legatus.git", .upToNextMajor(from: "2.0.1"))
+.package(url: "https://github.com/artemkalinovsky/Legatus.git", from: Version(from: "2.0.1"))
 ```
 
 and then specify `"Legatus"` as a dependency of the Target in which you wish to use Legatus.
 Here's an example `PackageDescription` :
 
 ``` swift
-// swift-tools-version:5.5
+// swift-tools-version:5.6
 import PackageDescription
 
 let package = Package(
@@ -66,7 +66,7 @@ let package = Package(
             targets: ["MyPackage"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/artemkalinovsky/Legatus.git", .upToNextMajor(from: "2.0.1"))
+        .package(url: "https://github.com/artemkalinovsky/Legatus.git", from: Version(from: "2.0.1"))
     ],
     targets: [
         .target(
