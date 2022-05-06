@@ -33,7 +33,7 @@ Any contributions (pull requests, questions, propositions) are always welcome!�
 
 ## Requirements 📝 
 
-* Swift 5.6+
+* Swift 5.5+
 * macOS 12+
 * iOS 15+
 * tvOS 15+
@@ -55,7 +55,7 @@ and then specify `"Legatus"` as a dependency of the Target in which you wish to 
 Here's an example `PackageDescription` :
 
 ``` swift
-// swift-tools-version:5.6
+// swift-tools-version:5.5
 import PackageDescription
 
 let package = Package(
@@ -255,9 +255,8 @@ While working with SwiftUI, where most of UI updates based on *Combine* mechanis
 
 ## Swift Concurrency Extension 🚦
 ``` swift
-    let httpBinApiClient = APIClient(baseURL: URL(string: "https://httpbin.org/")!)
     do {
-        let httpBinGetResponse = try await httpBinApiClient.executeRequest(request: HttpBinGetRequest())
+        let usersResponse = try await apiClient.executeRequest(request: UsersApiRequest())
     } catch {
         // handle error
     }
