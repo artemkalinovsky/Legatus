@@ -15,8 +15,8 @@ let package = Package(
             targets: ["Legatus"])
     ],
     dependencies: [
-        .package(url: "https://github.com/Alamofire/Alamofire.git", .exactItem(Version("5.6.1"))),
-        .package(url: "https://github.com/drmohundro/SWXMLHash.git", .exactItem(Version("6.0.0")))
+        .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: Version("5.0.0"))),
+        .package(url: "https://github.com/drmohundro/SWXMLHash.git", .upToNextMajor(from: Version("7.0.0")))
     ],
     targets: [
         .target(
