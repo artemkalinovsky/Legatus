@@ -42,7 +42,7 @@ final class ApiClientTests: XCTestCase {
     }
 
     func testXmlRequestWithInnerKeypath() {
-        let expectedApiVersionValue = "1.3"
+        let expectedApiVersionValue = "1.4"
 
         let randomUserApiClient = APIClient(baseURL: URL(string: "https://randomuser.me/api/")!)
         let getRandomUserApiVersionRequest = GetRandomUserApiVersionRequest()
@@ -124,7 +124,7 @@ final class ApiClientTests: XCTestCase {
     }
 
     func testAuthRequest() {
-        let accessToken = UUID().uuidString
+        let accessToken = "Bearer \(UUID().uuidString)"
         let apiClient = APIClient(baseURL: URL(string: "https://httpbin.org/")!)
         let testAuthRequest = HttpBinBearerAuthRequest()
         testAuthRequest.accessToken = accessToken
@@ -140,7 +140,7 @@ final class ApiClientTests: XCTestCase {
             apiRequestExpectation.fulfill()
         }
 
-        wait(for: [apiRequestExpectation], timeout: 10.0)
+        wait(for: [apiRequestExpectation], timeout: 20.0)
     }
 
     func testMissedAccessToken() {
